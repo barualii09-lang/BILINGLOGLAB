@@ -1,0 +1,2059 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorium RSIA Jimmy Medika Borneo</title>
+
+<!-- Library SheetJS untuk Ekspor Excel Berwarna & Merge -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+
+<!-- Firebase SDK Compat Version -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+  --green: #176b45;
+  --green-light: #e7f2e9;
+  --yellow: #f39a36;
+  --red: #b84035;
+  --ink: #2c3e50;
+  --line: #d6e5d9;
+  --bg-card: rgba(255, 255, 255, 0.92);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f3f7f2; 
+  background-image: url('bg-pattern.jpeg'), url('bg-pattern.jpg'); 
+  background-repeat: repeat;
+  background-attachment: fixed;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+header {
+  background-image: url('header-bg.png'); 
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 15px 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.92) 45%, rgba(255,255,255,0.6) 100%);
+  z-index: 1;
+}
+
+header > div {
+  position: relative;
+  z-index: 2;
+}
+
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  margin-top: 5px;
+  background: var(--green-light);
+  padding: 4px 12px;
+  border-radius: 4px;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.marquee-text {
+  display: inline-block;
+  padding-left: 100%; 
+  animation: marquee 58s linear infinite; 
+}
+
+@keyframes marquee {
+  0% { transform: translateX(50); }
+  100% { transform: translateX(-100%); }
+}
+
+.notice {
+  background: #fff8e6;
+  border: 1px solid #ffe599;
+  color: #7f6000;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: bold;
+}
+.status-online { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.status-offline { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* Tab Navigation */
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  background: var(--green-light);
+}
+
+.tab.active {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+
+/* Panel/Card Design */
+.panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  width: 100%;
+}
+
+.panel h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 15px;
+  color: var(--green);
+  border-bottom: 2px solid var(--green-light);
+  padding-bottom: 6px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.field label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #555;
+  text-transform: uppercase;
+}
+
+input, select {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  background: #fff;
+  width: 100%;
+}
+
+input:focus, select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px rgba(23, 107, 69, 0.15);
+}
+
+/* Buttons */
+.btn {
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--green);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.btn.secondary { background: var(--green-light); color: var(--green); }
+.btn.orange { background: var(--yellow); color: #fff; }
+.btn.yellow { background: #f1c40f; color: #333; }
+.btn.danger { background: var(--red); color: #fff; }
+
+.examrow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.total {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--green);
+}
+
+/* Table Design */
+.table-wrap {
+  overflow-x: auto;
+  width: 100%;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 12px;
+}
+
+th {
+  background: var(--green-light);
+  color: var(--green);
+  font-weight: 800;
+}
+
+.num { text-align: right; }
+.hidden { display: none !important; }
+
+/* Stats Grid */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  background: var(--bg-card);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.stat span { font-size: 10px; font-weight: 800; color: #666; }
+.stat strong { display: block; font-size: 18px; color: var(--green); margin-top: 4px; }
+
+/* Action Icons */
+.icon-action-btn { border:0; border-radius:8px; padding:7px 10px; font-size:11px; font-weight:800; display:inline-flex; align-items:center; gap:4px; cursor:pointer; }
+.icon-action-btn.secondary { background:#e7f2e9; color:var(--green); }
+.icon-action-btn.excel { background:var(--yellow); color:#fff; }
+.icon-action-btn.pdf { background:#b84035; color:#fff; }
+.icon-action-btn.danger { background:#b84035; color:#fff; }
+
+.icon-btn { border:0; border-radius:6px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:12px; }
+.icon-btn.excel { background:var(--yellow); color:#fff; }
+.icon-btn.pdf { background:#b84035; color:#fff; }
+.icon-btn.edit { background:#e7f2e9; color:var(--green); }
+.icon-btn.delete { background:#b84035; color:#fff; }
+
+/* Fitur Paket Pemeriksaan Styling */
+.paket-box { margin:10px 0 16px; padding:12px; border:1px solid #d6e5d9; border-radius:12px; background:#f7fbf8; width:100%; }
+.paket-judul { font-weight:bold; color:#176b45; margin-bottom:10px; font-size:13px; }
+.paket-tombol { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.paket-tombol button { padding:7px 10px; border:1px solid #176b45; border-radius:8px; background:white; color:#176b45; cursor:pointer; font-weight:bold; font-size:12px; }
+.paket-tombol button.aktif { background:#176b45; color:white; }
+.paket-tombol button.tambah-paket-btn { background:#f39a36; color:#fff; border-color:#f39a36; }
+.paket-box input[type="text"] { width:100%; padding:8px 10px; box-sizing:border-box; border:1px solid #ccd8ce; border-radius:7px; margin:4px 0 10px; font-size:13px; }
+.paket-pemeriksaan-list { display:flex; flex-direction:column; gap:6px; margin:8px 0 12px; }
+.paket-row-ketik { display:flex; gap:6px; align-items:center; width:100%; }
+.paket-row-ketik input { margin:0!important; flex:1; }
+.paket-keterangan { font-size:11px; color:#65756a; margin-top:8px; }
+
+/* RESPONSIVE KHUSUS MOBILE / HP */
+@media(max-width: 768px) {
+  .wrap { padding: 6px; }
+  .grid { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr; }
+  
+  .examrow { 
+    grid-template-columns: 1fr 1fr; 
+    background: #ffffff;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .examrow .exam-select { 
+    grid-column: 1 / -1; 
+  }
+  .examrow .removeExam { 
+    grid-column: 1 / -1; 
+    margin-top: 4px;
+  }
+  
+  .paket-tombol button {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+  .paket-aksi-btn-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+  .paket-aksi-btn-group button {
+    width: 100%;
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+}
+
+/* Riwayat ringkas per tanggal */
+.date-summary-row td {
+  background: #edf6ef;
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+}
+.date-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.date-summary-main { color: var(--green); }
+.date-summary-meta { color: #52645a; font-size: 11px; font-weight: 600; }
+.date-toggle {
+  border: 0; border-radius: 7px; padding: 7px 11px;
+  background: var(--green); color: white; cursor: pointer;
+  font-weight: 700; font-size: 11px;
+}
+.date-detail-row.hidden { display: none; }
+.date-detail-row td { padding: 0; background: #fff; }
+.date-detail-inner { overflow-x: auto; padding: 5px 8px 10px 30px; }
+.date-detail-inner table { margin-top: 5px; min-width: 850px; }
+.date-detail-inner th, .date-detail-inner td { font-size: 11px; padding: 7px; }
+
+</style>
+</head>
+<body>
+
+<!-- MODAL LOGIN PASSWORD -->
+<div id="loginModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:99999; display:flex; align-items:center; justify-content:center; padding:15px;">
+  <div style="background:white; padding:25px 20px; border-radius:12px; width:100%; max-width:340px; box-shadow:0 6px 25px rgba(0,0,0,0.3); text-align:center;">
+    <h3 style="color:#176b45; margin-top:0; margin-bottom:8px;">🔒 Login Laboratorium</h3>
+    <p style="font-size:12px; color:#666; margin-bottom:18px;">RSIA Jimmy Medika Borneo<br>Masukkan password untuk membuka aplikasi</p>
+    <input type="password" id="appPassword" placeholder="Masukkan Password..." style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #d6e5d9; border-radius:6px; box-sizing:border-box; text-align:center; font-size:14px;">
+    <button id="loginBtn" class="btn" style="width:100%;">Masuk Aplikasi</button>
+    <div id="loginError" style="color:red; font-size:12px; margin-top:10px; font-weight:bold;"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="logo.png" alt="Logo RSIA" style="height: 44px; width: auto; background: white; padding: 4px; border-radius: 8px;" onerror="this.style.display='none'">
+      <div>
+        <h1 style="font-size:16px; margin:0;">Laboratorium RSIA Jimmy Medika Borneo</h1>
+        <div class="marquee-container">
+          <div class="marquee-text">
+            ✨ "Tidak harus cepat, yang penting tetap bergerak....Satu langkah kecil hari ini tetap berarti....Kamu boleh beristirahat, tetapi jangan menyerah pada dirimu sendiri....Pelan-pelan, asal tetap berjalan....Fokus pada progres, bukan validasi....Hari yang sulit tidak selalu berarti hidup yang buruk." ✨
+          </div>
+          <div class="marquee-text">
+            ✨ "Tidak harus cepat, yang penting tetap bergerak....Satu langkah kecil hari ini tetap berarti....Kamu boleh beristirahat, tetapi jangan menyerah pada dirimu sendiri....Pelan-pelan, asal tetap berjalan....Fokus pada progres, bukan validasi....Hari yang sulit tidak selalu berarti hidup yang buruk." ✨
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="notice">
+    <div><b>Informasi:</b> Bila ada kendala hubungi WA 082255007574.</div>
+    <div><span id="firebaseStatus" class="status-badge status-offline">🔥 Firebase: Menghubungkan...</span></div>
+  </div>
+  
+  <div class="tabs">
+    <button class="tab active" data-tab="input">Input Transaksi</button>
+    <button class="tab" data-tab="history">Riwayat & Laporan</button>
+    <button class="tab" data-tab="tariff">Daftar Tarif</button>
+    <button class="tab" data-tab="backup">Ekspor & Cadangan</button>
+  </div>
+
+  <section id="input" class="view">
+    <div class="panel">
+      <h2>Data Pasien</h2>
+      <div class="grid">
+        <div class="field"><label>TANGGAL</label><input type="date" id="date"></div>
+        <div class="field"><label>JAM PEMERIKSAAN</label><input type="time" id="examTime"></div>
+        <div class="field"><label>JENIS LAPORAN / TARIF</label><select id="report"><option>UMUM</option><option>BPJS</option><option>UMUM PA</option><option>BPJS PA</option><option>VIP</option><option>VVIP</option></select></div>
+        <div class="field"><label>INSTALASI</label><select id="installation"><option>RAJAL</option><option>RANAP</option><option>IGD</option><option>LAINNYA</option></select></div>
+        <div class="field" style="grid-column: 1 / -1;"><label>NAMA PASIEN / NO. RM</label><input id="patient" placeholder="Masukkan nama pasien atau No. RM..."></div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <h2>Pemeriksaan</h2>
+      <div id="examRows"></div>
+      <div class="actions" style="margin-top: 10px;"><button class="btn secondary" id="addExam" type="button" style="width:100%;">＋ Tambah Pemeriksaan</button></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:#666;">TOTAL BIAYA PEMERIKSAAN</div>
+          <div class="total" id="grandTotal">Rp0</div>
+        </div>
+        <button class="btn orange" id="save" type="button" style="padding:12px 20px;">Simpan Transaksi</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="history" class="view hidden">
+    <div class="stats">
+      <div class="stat"><span>JUMLAH TRANSAKSI</span><strong id="statCount">0</strong></div>
+      <div class="stat"><span>TOTAL PEMASUKAN</span><strong id="statTotal">Rp0</strong></div>
+      <div class="stat"><span>PEMERIKSAAN TERCATAT</span><strong id="statExams">0</strong></div>
+    </div>
+    <div class="panel">
+      <h2>Filter Laporan</h2>
+      <div class="grid">
+        <div class="field"><label>DARI TANGGAL</label><input type="date" id="fromDate"></div>
+        <div class="field"><label>SAMPAI TANGGAL</label><input type="date" id="toDate"></div>
+        <div class="field"><label>JENIS LAPORAN</label><select id="filterReport"><option value="">Semua</option><option>UMUM</option><option>BPJS</option><option>UMUM PA</option><option>BPJS PA</option><option>VIP</option><option>VVIP</option></select></div>
+        <div class="field"><label>CARI PASIEN</label><input id="searchPatient" placeholder="Cari nama pasien..."></div>
+      </div>
+      <div class="actions" style="margin-top: 12px; display:flex; gap:8px;">
+        <button class="btn" id="filterBtn" type="button" style="flex:1;">Terapkan Filter</button>
+        <button class="btn secondary" id="clearFilter" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+        <h2 style="margin:0; border:none; padding:0;">Riwayat Transaksi</h2>
+        
+        <div style="display:flex; gap:6px; flex-wrap:wrap; width:100%;">
+          <button class="icon-action-btn secondary" id="selectAllBtn" type="button" title="Pilih / Batal Semua">☑️ Pilih Semua</button>
+          <button class="icon-action-btn excel" id="exportSelectedBtn" type="button" title="Ekspor Terpilih Ke Excel">📊 Excel Terpilih</button>
+          <button class="icon-action-btn pdf" id="exportSelectedPdfBtn" type="button" title="Cetak / Ekspor Terpilih Ke PDF">📄 PDF Terpilih</button>
+          <button class="icon-action-btn danger" id="deleteSelectedBtn" type="button" title="Hapus Terpilih">🗑️ Hapus Terpilih</button>
+        </div>
+      </div>
+      <div id="historyPager" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px;margin:0 0 12px;background:var(--surface, #f5f7fa);border-radius:10px;">
+        <button class="btn secondary" id="historyPrev" type="button">← Tanggal Lebih Lama</button>
+        <div style="text-align:center;flex:1;min-width:150px;">
+          <div id="historyPageDate" style="font-weight:700;font-size:16px;">-</div>
+          <small id="historyPageInfo">Halaman 0 dari 0</small>
+        </div>
+        <button class="btn secondary" id="historyNext" type="button">Tanggal Lebih Baru →</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30px;"><input type="checkbox" id="selectAllMaster"></th>
+              <th>Tanggal / Jam</th>
+              <th>Laporan</th>
+              <th>Instalasi</th>
+              <th>No. RM</th>
+              <th>Nama Pasien</th>
+              <th>Pemeriksaan</th>
+              <th class="num">Total</th>
+              <th style="text-align:center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="tariff" class="view hidden">
+    <div class="panel">
+      <h2 id="tariffFormTitle">Tambah Tarif Pemeriksaan Baru</h2>
+      <div class="grid">
+        <div class="field"><label>Nama Pemeriksaan</label><input id="newTariffName" placeholder="Contoh: DARAH RUTIN"></div>
+        <div class="field"><label>Harga BHP (Rp)</label><input id="newTariffBhp" type="number" min="0" placeholder="25000"></div>
+        <div class="field"><label>Harga HPP (Rp)</label><input id="newTariffHpp" type="number" min="0" placeholder="30000"></div>
+        <div class="field"><label>Harga UMUM (Rp)</label><input id="newTariffPrice" type="number" min="0" placeholder="75000"></div>
+        <div class="field"><label>Harga VIP/VVIP (Rp)</label><input id="newTariffVip" type="number" min="0" placeholder="90000"></div>
+      </div>
+      <div class="actions" style="margin-top:12px; display:flex; gap:8px;">
+        <button class="btn" id="addTariff" type="button" style="flex:1;">Tambah Tarif</button>
+        <button class="btn secondary hidden" id="cancelEditTariff" type="button">Batal Edit</button>
+      </div>
+      <div class="table-wrap" style="margin-top:16px">
+        <table>
+          <thead><tr><th>Pemeriksaan</th><th class="num">BHP</th><th class="num">HPP</th><th class="num">UMUM</th><th class="num">VIP / VVIP</th><th>Aksi</th></tr></thead>
+          <tbody id="tariffBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="backup" class="view hidden">
+    <div class="panel">
+      <h2>Ekspor & Cadangan Data</h2>
+      <div class="actions" style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn yellow" id="exportSummaryCSV" type="button" style="width:100%;">Ekspor Rekapitulasi (Format Excel)</button>
+        <button class="btn orange" id="downloadBackup" type="button" style="flex:1;">Cadangkan Data (JSON)</button>
+        <label class="btn secondary" for="restoreFile" style="cursor:pointer; flex:1; text-align:center;">Pulihkan Cadangan JSON</label>
+        <input type="file" id="restoreFile" accept="application/json,.json" class="hidden">
+      </div>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+
+      <h2>Ekspor Periode (Bulanan / Tahunan)</h2>
+      <div class="grid" style="align-items:end;">
+        <div class="field">
+          <label>PILIH BULAN</label>
+          <select id="exportMonth">
+            <option value="01">Januari</option>
+            <option value="02">Februari</option>
+            <option value="03">Maret</option>
+            <option value="04">April</option>
+            <option value="05">Mei</option>
+            <option value="06">Juni</option>
+            <option value="07">Juli</option>
+            <option value="08">Agustus</option>
+            <option value="09">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Desember</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>PILIH TAHUN</label>
+          <select id="exportYear"></select>
+        </div>
+        <div class="actions" style="grid-column: span 1; margin:0; display:flex; gap:8px; flex-direction:column;">
+          <button class="btn" id="exportMonthlyBtn" type="button" style="width:100%;">📊 Ekspor Transaksi Bulanan</button>
+          <button class="btn orange" id="exportYearlyBtn" type="button" style="width:100%;">📅 Ekspor Transaksi Tahunan</button>
+        </div>
+      </div>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+
+      <h2>Ringkasan per Jenis Laporan</h2>
+      <div class="table-wrap" style="margin-bottom:20px">
+        <table>
+          <thead><tr><th>Jenis Laporan</th><th class="num">Transaksi</th><th class="num">Total Pemasukan</th></tr></thead>
+          <tbody id="summaryBody"></tbody>
+        </table>
+      </div>
+      <h2>Total Jumlah Setiap Pemeriksaan</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nama Pemeriksaan</th><th class="num">Total Jumlah (Qty) Terlaksana</th></tr></thead>
+          <tbody id="examSummaryBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  <footer style="padding:10px 2px 30px; font-size:11px; color:#666; text-align:center;">RSIA Jimmy Medika Borneo v6.6 (Mobile Optimized)</footer>
+</main>
+
+<script>
+// --- LOGIKA PASSWORD LOGIN ---
+const APP_PASSWORD = "1234";
+
+document.getElementById('loginBtn').addEventListener('click', function() {
+  const inputVal = document.getElementById('appPassword').value;
+  if(inputVal === APP_PASSWORD) {
+    document.getElementById('loginModal').style.display = 'none';
+  } else {
+    document.getElementById('loginError').textContent = 'Password salah! Silakan coba lagi.';
+  }
+});
+
+document.getElementById('appPassword').addEventListener('keypress', function(e) {
+  if(e.key === 'Enter') {
+    document.getElementById('loginBtn').click();
+  }
+});
+
+// --- INISIALISASI FIREBASE FIRESTORE ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBcNM1EQDKEqlR7crqfQEo4vh56BoR_jTQ",
+  authDomain: "lab-jimmy-medika-borneo.firebaseapp.com",
+  projectId: "lab-jimmy-medika-borneo",
+  storageBucket: "lab-jimmy-medika-borneo.firebasestorage.app",
+  messagingSenderId: "670178311896",
+  appId: "1:670178311896:web:260c59b328ee6bd77ea1ad",
+  measurementId: "G-PJCL444PJF"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function updateStatusBadge(online, msg) {
+  const badge = document.getElementById('firebaseStatus');
+  if (badge) {
+    if (online) {
+      badge.textContent = '🔥 Firebase: Terhubung';
+      badge.className = 'status-badge status-online';
+    } else {
+      badge.textContent = msg || '💾 Offline';
+      badge.className = 'status-badge status-offline';
+    }
+  }
+}
+
+const defaultTariffs=[
+  {"name": "DARAH LENGKAP", "priceBhp": 39821, "priceHpp": 61480, "priceUmum": 144000, "priceVip": 144000},
+  {"name": "DARAH RUTIN", "priceBhp": 29821, "priceHpp": 30740, "priceUmum": 90000, "priceVip": 90000},
+  {"name": "BLEEDING TIME (BT)", "priceBhp": 3250, "priceHpp": 4490, "priceUmum": 21000, "priceVip": 21000},
+  {"name": "CLOOTING TIME (CT)", "priceBhp": 8000, "priceHpp": 4490, "priceUmum": 24000, "priceVip": 24000},
+  {"name": "MORFOLOGI DARAH TEPI (HAPUSAN DARAH TEPI)", "priceBhp": 67983, "priceHpp": 60000, "priceUmum": 192000, "priceVip": 192000},
+  {"name": "MALARIA (MIKROSKOPIS)", "priceBhp": 29708, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "PT (RUJUKAN NUR ASIH)", "priceBhp": 168828, "priceHpp": 75000, "priceUmum": 192000, "priceVip": 192000},
+  {"name": "APTT (RUJUKAN NUR ASIH)", "priceBhp": 168828, "priceHpp": 75000, "priceUmum": 192000, "priceVip": 192000},
+  {"name": "PT", "priceBhp": 82639, "priceHpp": 75000, "priceUmum": 192000, "priceVip": 192000},
+  {"name": "APTT", "priceBhp": 57289, "priceHpp": 75000, "priceUmum": 192000, "priceVip": 192000},
+  {"name": "FERRITIN", "priceBhp": 337544, "priceHpp": 0, "priceUmum": 396000, "priceVip": 396000},
+  {"name": "HB ELEKTROFORESA", "priceBhp": 832344, "priceHpp": 0, "priceUmum": 990000, "priceVip": 990000},
+  {"name": "INR", "priceBhp": 218628, "priceHpp": 0, "priceUmum": 255000, "priceVip": 255000},
+  {"name": "GOLONGAN DARAH", "priceBhp": 10734, "priceHpp": 0, "priceUmum": 36000, "priceVip": 36000},
+  {"name": "GLUKOSA (STANBIO)", "priceBhp": 27733, "priceHpp": 0, "priceUmum": 66000, "priceVip": 66000},
+  {"name": "GLUKOSA (STIK/DR. FAMILY)", "priceBhp": 4426, "priceHpp": 0, "priceUmum": 66000, "priceVip": 66000},
+  {"name": "CHOLESTEROL (STANBIO)", "priceBhp": 35305, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "CHOLESTEROL (STIK/EASYTOUCH)", "priceBhp": 17466, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "ASAM URAT (STANBIO)", "priceBhp": 27961, "priceHpp": 0, "priceUmum": 66000, "priceVip": 66000},
+  {"name": "ASAM URAT (STIK/EASYTOUCH)", "priceBhp": 4466, "priceHpp": 0, "priceUmum": 66000, "priceVip": 66000},
+  {"name": "TRIGLISERIDA (STANBIO)", "priceBhp": 34545, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "TRIGLISERIDA (DIALAB)", "priceBhp": 19081, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "SGOT (STANBIO)", "priceBhp": 31201, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "SGPT (STANBIO)", "priceBhp": 31201, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "BUN (STANBIO)", "priceBhp": 41057, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "KREATININ (STANBIO)", "priceBhp": 27315, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "HDL-CHOLESTEROL (STANBIO)", "priceBhp": 23033, "priceHpp": 0, "priceUmum": 79200, "priceVip": 79200},
+  {"name": "BILIRUBIN TOTAL (DIALAB)", "priceBhp": 37548, "priceHpp": 0, "priceUmum": 90000, "priceVip": 90000},
+  {"name": "BILIRUBIN TOTAL (STANBIO)", "priceBhp": 31361, "priceHpp": 0, "priceUmum": 90000, "priceVip": 90000},
+  {"name": "BILIRUBIN DIREK (DIALAB)", "priceBhp": 38621, "priceHpp": 0, "priceUmum": 90000, "priceVip": 90000},
+  {"name": "BILIRUBIN DIREK (STANBIO)", "priceBhp": 25421, "priceHpp": 0, "priceUmum": 90000, "priceVip": 90000},
+  {"name": "PROTEIN TOTAL (RUJUK NUR ASIH)", "priceBhp": 73949, "priceHpp": 0, "priceUmum": 96000, "priceVip": 96000},
+  {"name": "ALBUMIN (RUJUK NUR ASIH)", "priceBhp": 73949, "priceHpp": 0, "priceUmum": 96000, "priceVip": 96000},
+  {"name": "GAMMA GT (RUJUK NUR ASIH)", "priceBhp": 93949, "priceHpp": 0, "priceUmum": 122000, "priceVip": 122000},
+  {"name": "ALKALI PHOSPHAT (RUJUK NUR ASIH)", "priceBhp": 78949, "priceHpp": 0, "priceUmum": 100800, "priceVip": 100800},
+  {"name": "CK-MB (RUJUK NUR ASIH)", "priceBhp": 208949, "priceHpp": 0, "priceUmum": 288000, "priceVip": 288000},
+  {"name": "ELEKTROLIT N, K, CL (RUJUK NUR ASIH)", "priceBhp": 218949, "priceHpp": 0, "priceUmum": 252000, "priceVip": 252000},
+  {"name": "ELEKTROLIT N, K, CL", "priceBhp": 89278, "priceHpp": 0, "priceUmum": 210000, "priceVip": 210000},
+  {"name": "ELEKTROLIT NATRIUM", "priceBhp": 36710, "priceHpp": 0, "priceUmum": 70000, "priceVip": 70000},
+  {"name": "ELEKTROLIT KALIUM", "priceBhp": 36710, "priceHpp": 0, "priceUmum": 70000, "priceVip": 70000},
+  {"name": "ELEKTROLIT CHLORIDA", "priceBhp": 36710, "priceHpp": 0, "priceUmum": 70000, "priceVip": 70000},
+  {"name": "KALSIUM (RUJUK NUR ASIH)", "priceBhp": 103949, "priceHpp": 0, "priceUmum": 136800, "priceVip": 136800},
+  {"name": "FOSFOR (RUJUK NUR ASIH)", "priceBhp": 118949, "priceHpp": 0, "priceUmum": 132000, "priceVip": 132000},
+  {"name": "MAGNESIUM (RUJUK NUR ASIH)", "priceBhp": 118949, "priceHpp": 0, "priceUmum": 132000, "priceVip": 132000},
+  {"name": "HBA1C (RUJUK NUR ASIH)", "priceBhp": 198949, "priceHpp": 0, "priceUmum": 273600, "priceVip": 273600},
+  {"name": "GLOBULIN", "priceBhp": 103949, "priceHpp": 0, "priceUmum": 136800, "priceVip": 136800},
+  {"name": "WIDAL (A,B,O,H)", "priceBhp": 14832, "priceHpp": 0, "priceUmum": 64800, "priceVip": 64800},
+  {"name": "HBSAG (RAPID)", "priceBhp": 49713, "priceHpp": 0, "priceUmum": 125000, "priceVip": 125000},
+  {"name": "HBSAG KONFIRMASI (RUJUK NUR ASIH)", "priceBhp": 2083949, "priceHpp": 0, "priceUmum": 2490000, "priceVip": 2490000},
+  {"name": "ANTI HIV (RAPID)", "priceBhp": 39484, "priceHpp": 0, "priceUmum": 150000, "priceVip": 150000},
+  {"name": "TPHA (RAPID)", "priceBhp": 49516, "priceHpp": 0, "priceUmum": 125000, "priceVip": 125000},
+  {"name": "SALMONELLA TYPHI IGG (RUJUK NUR ASIH)", "priceBhp": 298949, "priceHpp": 0, "priceUmum": 348000, "priceVip": 348000},
+  {"name": "SALMONELLA TYPHI IGM (RUJUK NUR ASIH)", "priceBhp": 298949, "priceHpp": 0, "priceUmum": 348000, "priceVip": 348000},
+  {"name": "NSI (RAPID)", "priceBhp": 104780, "priceHpp": 0, "priceUmum": 150000, "priceVip": 150000},
+  {"name": "DENGUE IGG&IGM (RAPID)", "priceBhp": 100756, "priceHpp": 0, "priceUmum": 150000, "priceVip": 150000},
+  {"name": "CRP (RUJUK NUR ASIH)", "priceBhp": 118949, "priceHpp": 0, "priceUmum": 162000, "priceVip": 162000},
+  {"name": "ASTO (RUJUK NUR ASIH)", "priceBhp": 118949, "priceHpp": 0, "priceUmum": 162000, "priceVip": 162000},
+  {"name": "RF (RUJUK NUR ASIH)", "priceBhp": 118949, "priceHpp": 0, "priceUmum": 162000, "priceVip": 162000},
+  {"name": "ANTI HAV TOTAL (RUJUK NUR ASIH)", "priceBhp": 343949, "priceHpp": 0, "priceUmum": 402000, "priceVip": 402000},
+  {"name": "ANTI HAV IGM (RUJUK NUR ASIH)", "priceBhp": 343949, "priceHpp": 0, "priceUmum": 402000, "priceVip": 402000},
+  {"name": "ANTI HBS (RUJUK NUR ASIH)", "priceBhp": 148949, "priceHpp": 0, "priceUmum": 201600, "priceVip": 201600},
+  {"name": "ANTI HBEAG (RUJUK NUR ASIH)", "priceBhp": 343949, "priceHpp": 0, "priceUmum": 402000, "priceVip": 402000},
+  {"name": "ANTI HCV (RUJUK NUR ASIH)", "priceBhp": 268949, "priceHpp": 0, "priceUmum": 312000, "priceVip": 312000},
+  {"name": "TORCH (RUJUK NUR ASIH)", "priceBhp": 2508949, "priceHpp": 0, "priceUmum": 3000000, "priceVip": 3000000},
+  {"name": "ANTI TOXOPLASMA IGG (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI TOXOPLASMA IGM (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI RUBELLA IGG (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI RUBELLA IGM (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI CMV IGG (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI CMV IGM (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI HSV 1 IGG (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI HSV 1 IGM (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI HSV 2 IGG (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI HSV 2 IGM (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "T3 (RUJUK NUR ASIH)", "priceBhp": 243949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "T4 (RUJUK NUR ASIH)", "priceBhp": 243949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "TSH (RUJUK NUR ASIH)", "priceBhp": 243949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "FT41/FT41 (RUJUK NUR ASIH)", "priceBhp": 1398949, "priceHpp": 0, "priceUmum": 1668000, "priceVip": 1668000},
+  {"name": "FREE T3 (RUJUK NUR ASIH)", "priceBhp": 718949, "priceHpp": 0, "priceUmum": 855000, "priceVip": 855000},
+  {"name": "FREE T4 (RUJUK NUR ASIH)", "priceBhp": 318949, "priceHpp": 0, "priceUmum": 375000, "priceVip": 375000},
+  {"name": "AFP/HATI (RUJUK NUR ASIH)", "priceBhp": 293949, "priceHpp": 0, "priceUmum": 345000, "priceVip": 345000},
+  {"name": "NSE/PARU (RUJUK NUR ASIH)", "priceBhp": 1238949, "priceHpp": 0, "priceUmum": 1476000, "priceVip": 1476000},
+  {"name": "CEA/COLON,GASTER (RUJUK NUR ASIH)", "priceBhp": 293949, "priceHpp": 0, "priceUmum": 345000, "priceVip": 345000},
+  {"name": "PSA/PROSTAT (RUJUK NUR ASIH)", "priceBhp": 338949, "priceHpp": 0, "priceUmum": 400000, "priceVip": 400000},
+  {"name": "CA 19-9/PANKREAS (RUJUK NUR ASIH)", "priceBhp": 978949, "priceHpp": 0, "priceUmum": 1164000, "priceVip": 1164000},
+  {"name": "CA 125/OVARIUM (RUJUK NUR ASIH)", "priceBhp": 468949, "priceHpp": 0, "priceUmum": 555000, "priceVip": 555000},
+  {"name": "CA 15-3/PAYUDARA (RUJUK NUR ASIH)", "priceBhp": 1038949, "priceHpp": 0, "priceUmum": 1236000, "priceVip": 1236000},
+  {"name": "ANTI HBE (RUJUK NUR ASIH)", "priceBhp": 343949, "priceHpp": 0, "priceUmum": 405000, "priceVip": 405000},
+  {"name": "ANTI HBC (RUJUK NUR ASIH)", "priceBhp": 258949, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "ANTI HBC IGM (RUJUK NUR ASIH)", "priceBhp": 958949, "priceHpp": 0, "priceUmum": 1140000, "priceVip": 1140000},
+  {"name": "BETA HCG KUANTITATIF (RUJUK NUR ASIH)", "priceBhp": 403949, "priceHpp": 0, "priceUmum": 475000, "priceVip": 475000},
+  {"name": "FESES LENGKAP", "priceBhp": 15500, "priceHpp": 0, "priceUmum": 78000, "priceVip": 78000},
+  {"name": "FOBT (DARAH SAMAR)", "priceBhp": 77092, "priceHpp": 0, "priceUmum": 96000, "priceVip": 96000},
+  {"name": "BTA (RUJUK LABKESDA/PEMERINTAH)", "priceBhp": 2500, "priceHpp": 0, "priceUmum": 0, "priceVip": 0},
+  {"name": "KULTUR CAIRAN TUBUH", "priceBhp": 302500, "priceHpp": 0, "priceUmum": 450000, "priceVip": 450000},
+  {"name": "URIN LENGKAP", "priceBhp": 17821, "priceHpp": 0, "priceUmum": 90000, "priceVip": 90000},
+  {"name": "URIN RUTIN", "priceBhp": 3963, "priceHpp": 0, "priceUmum": 54000, "priceVip": 54000},
+  {"name": "PP TEST (TEST KEHAMILAN)", "priceBhp": 13849, "priceHpp": 0, "priceUmum": 54000, "priceVip": 54000},
+  {"name": "ANALISA SPERMA", "priceBhp": 11814, "priceHpp": 0, "priceUmum": 300000, "priceVip": 300000},
+  {"name": "HISTO PA", "priceBhp": 353500, "priceHpp": 0, "priceUmum": 385000, "priceVip": 385000},
+  {"name": "IHC", "priceBhp": 2003500, "priceHpp": 0, "priceUmum": 2200000, "priceVip": 2200000},
+  {"name": "PAP SMEAR", "priceBhp": 204574, "priceHpp": 0, "priceUmum": 220000, "priceVip": 220000},
+  {"name": "SITOLOGI", "priceBhp": 302500, "priceHpp": 0, "priceUmum": 350000, "priceVip": 350000},
+  {"name": "FNAB", "priceBhp": 284490, "priceHpp": 0, "priceUmum": 400000, "priceVip": 400000},
+  {"name": "AHF (ANTI HEMOFILI FAKTOR)", "priceBhp": 505486, "priceHpp": 0, "priceUmum": 588000, "priceVip": 588000},
+  {"name": "FFP (FRESH FROZEN PLASMA)", "priceBhp": 505486, "priceHpp": 0, "priceUmum": 588000, "priceVip": 588000},
+  {"name": "PACK RED CELLS (RPC)", "priceBhp": 505486, "priceHpp": 0, "priceUmum": 588000, "priceVip": 588000},
+  {"name": "PLASMA KONVALENSE", "priceBhp": 2265486, "priceHpp": 0, "priceUmum": 2700000, "priceVip": 2700000},
+  {"name": "TC (TROMBOSYTE CONSENTRATE)", "priceBhp": 505486, "priceHpp": 0, "priceUmum": 588000, "priceVip": 588000},
+  {"name": "TROMBOSIT AFERESIS", "priceBhp": 3615486, "priceHpp": 0, "priceUmum": 4320000, "priceVip": 4320000},
+  {"name": "WE (WASHED ERYROSYT)", "priceBhp": 515486, "priceHpp": 0, "priceUmum": 600000, "priceVip": 600000},
+  {"name": "WB (WHOLE BLOOD)", "priceBhp": 505486, "priceHpp": 0, "priceUmum": 588000, "priceVip": 588000},
+  {"name": "UJI COCOK SERASI (CROSS MATCH)", "priceBhp": 115486, "priceHpp": 0, "priceUmum": 120000, "priceVip": 120000},
+  {"name": "LP (LIQUIT PLASMA)", "priceBhp": 505486, "priceHpp": 0, "priceUmum": 588000, "priceVip": 588000},
+  {"name": "PRC LEUCODEPLETED L-D", "priceBhp": 765486, "priceHpp": 0, "priceUmum": 900000, "priceVip": 900000},
+  {"name": "DARAH RHESUS NEGATIF (ANTIGEN NEGATIF)", "priceBhp": 475486, "priceHpp": 0, "priceUmum": 555000, "priceVip": 555000},
+  {"name": "HBSAG (PEMERINTAH)", "priceBhp": 0, "priceHpp": 2590, "priceUmum": 0, "priceVip": 0},
+  {"name": "HIV (PEMERINTAH)", "priceBhp": 0, "priceHpp": 2590, "priceUmum": 0, "priceVip": 0},
+  {"name": "TPHA (PEMERINTAH)", "priceBhp": 0, "priceHpp": 2590, "priceUmum": 0, "priceVip": 0},
+  {"name": "NS-1 (PEMERINTAH)", "priceBhp": 0, "priceHpp": 2590, "priceUmum": 0, "priceVip": 0},
+  {"name": "SHK (PEMERINTAH)", "priceBhp": 0, "priceHpp": 2590, "priceUmum": 0, "priceVip": 0},
+  {"name": "TCM (PEMERINTAH)", "priceBhp": 0, "priceHpp": 2590, "priceUmum": 0, "priceVip": 0},
+  {"name": "GDP", "priceBhp": 27733, "priceHpp": 0, "priceUmum": 66000, "priceVip": 66000},
+  {"name": "GDS 2 JAM PP", "priceBhp": 27733, "priceHpp": 0, "priceUmum": 66000, "priceVip": 66000},
+  {"name": "DARAH RUTINX2", "priceBhp": 59642, "priceHpp": 61480, "priceUmum": 180000, "priceVip": 180000}
+];
+
+const money=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
+const now=new Date();
+const localDate=d=>{let x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10)};
+const localTime=d=>d.toTimeString().slice(0,5);
+
+let tariffs = JSON.parse(localStorage.getItem('lab_tariffs_v9')||'null') || defaultTariffs;
+let transactions = JSON.parse(localStorage.getItem('lab_transactions_v5')||'[]');
+let filtered = transactions.slice();
+let editingTariffName = null;
+let editingTxId = null;
+
+function persistLocal(){
+  localStorage.setItem('lab_tariffs_v9', JSON.stringify(tariffs));
+  localStorage.setItem('lab_transactions_v5', JSON.stringify(transactions));
+}
+
+// SINKRONISASI REAL-TIME DARI FIREBASE DENGAN MERGE DEFAULT TARIFFS
+function listenFirebaseData() {
+  db.collection("transactions").onSnapshot((snapshot) => {
+    let cloudTx = [];
+    snapshot.forEach((doc) => {
+      cloudTx.push(doc.data());
+    });
+    cloudTx.sort((a,b) => (b.date + b.time).localeCompare(a.date + a.time));
+    transactions = cloudTx;
+    persistLocal();
+    updateStatusBadge(true);
+    renderHistory();
+  }, (error) => {
+    console.error("Gagal sinkron transaksi Firebase:", error);
+    updateStatusBadge(false, "❌ Firebase Error");
+  });
+
+  db.collection("tariffs").onSnapshot((snapshot) => {
+    let cloudTariffs = [];
+    snapshot.forEach((doc) => {
+      cloudTariffs.push(doc.data());
+    });
+    
+    if (cloudTariffs.length > 0) {
+      const tariffMap = new Map();
+      defaultTariffs.forEach(t => tariffMap.set(t.name.toUpperCase(), t));
+      cloudTariffs.forEach(t => tariffMap.set(t.name.toUpperCase(), t));
+      tariffs = Array.from(tariffMap.values());
+      persistLocal();
+      renderTariffs();
+    } else {
+      defaultTariffs.forEach(tf => {
+        db.collection("tariffs").doc(tf.name).set(tf).catch(e => console.error(e));
+      });
+    }
+  }, (error) => {
+    console.error("Gagal sinkron tarif Firebase:", error);
+  });
+}
+
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+function showTab(id){
+  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==id));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));
+  if(id==='history')renderHistory();
+  if(id==='tariff')renderTariffs();
+  if(id==='backup')renderSummary();
+}
+
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+
+document.getElementById('date').value=localDate(now);
+document.getElementById('examTime').value=localTime(now);
+
+const exportYearSelect = document.getElementById('exportYear');
+const currentYr = new Date().getFullYear();
+for(let y = currentYr - 3; y <= currentYr + 2; y++) {
+  const opt = document.createElement('option');
+  opt.value = y;
+  opt.textContent = y;
+  if(y === currentYr) opt.selected = true;
+  exportYearSelect.appendChild(opt);
+}
+document.getElementById('exportMonth').value = String(new Date().getMonth() + 1).padStart(2, '0');
+
+function currentPrice(t){
+  const report=document.getElementById('report').value;
+  return (report==='BPJS'||report==='BPJS PA'||report==='VIP'||report==='VVIP') ? t.priceVip : t.priceUmum;
+}
+
+function addExamRow(name='', qty=1, price=null){
+  const div=document.createElement('div');
+  div.className='examrow';
+  const listId='exam-list-'+Math.random().toString(36).slice(2,9);
+  const opts=tariffs.map(t=>`<option value="${escapeHtml(t.name)}"></option>`).join('');
+  
+  div.innerHTML=`
+    <div class="field exam-select"><label>PEMERIKSAAN</label><input class="examName" list="${listId}" value="${escapeHtml(name)}" placeholder="Pilih/ketik pemeriksaan..."><datalist id="${listId}">${opts}</datalist></div>
+    <div class="field"><label>JUMLAH</label><input class="examQty" type="number" min="1" value="${qty}"></div>
+    <div class="field"><label>HARGA SATUAN (Rp)</label><input class="examPrice" type="number" min="0" value="${price??''}" placeholder="Otomatis"></div>
+    <button class="btn danger removeExam" type="button">Hapus</button>
+  `;
+  document.getElementById('examRows').appendChild(div);
+  
+  const sel=div.querySelector('.examName');
+  const pr=div.querySelector('.examPrice');
+  const q=div.querySelector('.examQty');
+  
+  function updateRowPrice(){
+    const found=tariffs.find(t=>t.name.toLocaleLowerCase()===sel.value.trim().toLocaleLowerCase());
+    if(found) pr.value=currentPrice(found);
+    updateTotal();
+  }
+  
+  sel.addEventListener('input', updateRowPrice);
+  sel.addEventListener('change', updateRowPrice);
+  q.addEventListener('input', updateTotal);
+  pr.addEventListener('input', updateTotal);
+  div.querySelector('.removeExam').addEventListener('click',()=>{div.remove();updateTotal();});
+  
+  if(name && price===null){
+    const found=tariffs.find(t=>t.name===name);
+    if(found) pr.value=currentPrice(found);
+  }
+  updateTotal();
+}
+
+function refreshExamPrices(){
+  document.querySelectorAll('.examrow').forEach(r=>{
+    const name=r.querySelector('.examName').value.trim();
+    const found=tariffs.find(t=>t.name.toLocaleLowerCase()===name.toLocaleLowerCase());
+    if(found) r.querySelector('.examPrice').value=currentPrice(found);
+  });
+  updateTotal();
+}
+document.getElementById('report').addEventListener('change', refreshExamPrices);
+
+function updateTotal(){
+  let sum=0;
+  document.querySelectorAll('.examrow').forEach(r=>{
+    const q=Number(r.querySelector('.examQty').value)||0;
+    const p=Number(r.querySelector('.examPrice').value)||0;
+    sum += (q*p);
+  });
+  document.getElementById('grandTotal').textContent=money(sum);
+}
+
+document.getElementById('addExam').addEventListener('click',()=>addExamRow());
+addExamRow();
+
+
+// Function helper untuk memisahkan No. RM dan Nama
+function parsePatientInfo(rawInput) {
+  let patientRm = "-";
+  let patientName = rawInput || "-";
+  if (rawInput) {
+    const match = rawInput.match(/^([0-9.]+)?\s*(.*)$/);
+    if (match) {
+      if (match[1]) patientRm = match[1].trim();
+      patientName = match[2].trim() || rawInput;
+    }
+  }
+  return { patientRm, patientName };
+}
+
+document.getElementById('save').addEventListener('click',()=>{
+  const date=document.getElementById('date').value;
+  const time=document.getElementById('examTime').value;
+  const report=document.getElementById('report').value;
+  const installation=document.getElementById('installation').value;
+  const rawPatient=document.getElementById('patient').value.trim().toUpperCase();
+  const parsed = parsePatientInfo(rawPatient);
+  const patientRm = parsed.patientRm;
+  const patientName = parsed.patientName;
+  const patient = rawPatient;
+  
+  const exams=[...document.querySelectorAll('.examrow')].map(r=>{
+    const name=r.querySelector('.examName').value.toUpperCase();
+    const qty=Number(r.querySelector('.examQty').value)||1;
+    const price=Number(r.querySelector('.examPrice').value)||0;
+    const tData=tariffs.find(t=>t.name.toUpperCase()===name);
+    const bhp=tData?tData.priceBhp:0;
+    const hpp=tData?tData.priceHpp:0;
+    return { name, qty, price, bhp, hpp };
+  }).filter(e=>e.name);
+
+  if(!date||!patient||!exams.length){
+    alert('Harap lengkapi Tanggal, Nama Pasien, dan minimal satu Pemeriksaan.');
+    return;
+  }
+  
+  const totalVal = exams.reduce((s,e)=>s+(e.qty*e.price),0);
+
+  if(editingTxId) {
+    const idx = transactions.findIndex(t => t.id === editingTxId);
+    if(idx !== -1) {
+      const updatedTx = { id: editingTxId, date, time, report, installation, patient, patientRm, patientName, exams, total: totalVal };
+      transactions[idx] = updatedTx;
+      db.collection("transactions").doc(editingTxId).set(updatedTx).catch(e => console.error(e));
+    }
+    editingTxId = null;
+    document.getElementById('save').textContent = 'Simpan Transaksi';
+    alert('Transaksi berhasil diperbarui!');
+  } else {
+    const tx={
+      id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      date, time, report, installation, patient, patientRm, patientName, exams,
+      total: totalVal
+    };
+    transactions.unshift(tx);
+    db.collection("transactions").doc(tx.id).set(tx).catch(e => console.error(e));
+    alert('Transaksi berhasil disimpan!');
+  }
+
+  persistLocal();
+  document.getElementById('patient').value='';
+  document.getElementById('examRows').innerHTML='';
+  addExamRow();
+  renderHistory();
+});
+
+let currentHistoryPage = 0;
+
+function renderHistory(){
+  const from=document.getElementById('fromDate').value;
+  const to=document.getElementById('toDate').value;
+  const rep=document.getElementById('filterReport').value;
+  const q=document.getElementById('searchPatient').value.toLowerCase().trim();
+
+  filtered=transactions.filter(t=>
+    (!from||t.date>=from)&&
+    (!to||t.date<=to)&&
+    (!rep||t.report===rep)&&
+    (!q||String(t.patient||'').toLowerCase().includes(q))
+  );
+
+  document.getElementById('statCount').textContent=filtered.length;
+  document.getElementById('statTotal').textContent=money(filtered.reduce((s,t)=>s+(Number(t.total)||0),0));
+  document.getElementById('statExams').textContent=filtered.reduce((s,t)=>s+(t.exams||[]).reduce((n,e)=>n+(Number(e.qty)||0),0),0);
+
+  // Satu halaman hanya memuat transaksi pada satu tanggal.
+  const dateKeys=[...new Set(filtered.map(t=>t.date||'Tanggal tidak diketahui'))].sort((a,b)=>b.localeCompare(a));
+  const body=document.getElementById('historyBody');
+  const prev=document.getElementById('historyPrev');
+  const next=document.getElementById('historyNext');
+  const pageDate=document.getElementById('historyPageDate');
+  const pageInfo=document.getElementById('historyPageInfo');
+
+  if(!dateKeys.length){
+    currentHistoryPage=0;
+    body.innerHTML='<tr><td colspan="9" style="text-align:center;padding:24px;">Belum ada data transaksi pada filter ini.</td></tr>';
+    pageDate.textContent='Tidak ada tanggal';
+    pageInfo.textContent='Halaman 0 dari 0';
+    prev.disabled=true; next.disabled=true;
+    document.getElementById('selectAllMaster').checked=false;
+    return;
+  }
+
+  currentHistoryPage=Math.max(0,Math.min(currentHistoryPage,dateKeys.length-1));
+  const activeDate=dateKeys[currentHistoryPage];
+  const items=filtered.filter(t=>(t.date||'Tanggal tidak diketahui')===activeDate)
+    .slice().sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+
+  body.innerHTML=items.map(t=>`
+    <tr>
+      <td><input type="checkbox" class="row-checkbox" value="${escapeHtml(t.id)}"></td>
+      <td>${escapeHtml(t.date)} ${escapeHtml(t.time||'')}</td>
+      <td><span class="pill">${escapeHtml(t.report||'')}</span></td>
+      <td>${escapeHtml(t.installation||'')}</td>
+      <td><b>${escapeHtml(t.patientRm || parsePatientInfo(t.patient).patientRm)}</b></td>
+      <td>${escapeHtml(t.patientName || parsePatientInfo(t.patient).patientName)}</td>
+      <td>${(t.exams||[]).map(e=>`${escapeHtml(e.name)} ×${e.qty}`).join('<br>')}</td>
+      <td class="num">${money(t.total)}</td>
+      <td style="text-align:center;">
+        <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">
+          <button class="icon-btn excel" title="Ekspor Excel" type="button" onclick="exportSingleTx('${escapeHtml(t.id)}')">📁</button>
+          <button class="icon-btn pdf" title="Cetak / Ekspor PDF" type="button" onclick="printSingleTx('${escapeHtml(t.id)}')">📄</button>
+          <button class="icon-btn edit" title="Edit Transaksi" type="button" onclick="editTx('${escapeHtml(t.id)}')">✏️</button>
+          <button class="icon-btn delete" title="Hapus Transaksi" type="button" onclick="deleteTx('${escapeHtml(t.id)}')">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  const dayTotal=items.reduce((sum,t)=>sum+(Number(t.total)||0),0);
+  const dayExams=items.reduce((sum,t)=>sum+(t.exams||[]).reduce((n,e)=>n+(Number(e.qty)||0),0),0);
+  pageDate.textContent=activeDate==='Tanggal tidak diketahui'?activeDate:new Date(activeDate+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  pageInfo.textContent=`Halaman ${currentHistoryPage+1} dari ${dateKeys.length} · ${items.length} transaksi · ${dayExams} pemeriksaan · Total ${money(dayTotal)}`;
+  prev.disabled=currentHistoryPage>=dateKeys.length-1;
+  next.disabled=currentHistoryPage<=0;
+  prev.style.opacity=prev.disabled?'.45':'1';
+  next.style.opacity=next.disabled?'.45':'1';
+  document.getElementById('selectAllMaster').checked=false;
+}
+
+document.getElementById('historyPrev').addEventListener('click',()=>{
+  currentHistoryPage++;
+  renderHistory();
+});
+document.getElementById('historyNext').addEventListener('click',()=>{
+  currentHistoryPage=Math.max(0,currentHistoryPage-1);
+  renderHistory();
+});
+
+window.deleteTx=id=>{
+  const t = transactions.find(item => item.id === id);
+  const patientName = t ? t.patient : 'ini';
+  const confirmation = prompt(`⚠️ Hapus transaksi pasien "${patientName}"?\n\nKetik kata KONFIRMASI untuk melanjutkan:`);
+  if(confirmation !== "KONFIRMASI") {
+    if(confirmation !== null) alert('Kata konfirmasi salah! Penghapusan dibatalkan.');
+    return;
+  }
+  transactions=transactions.filter(t=>t.id!==id);
+  persistLocal();
+  db.collection("transactions").doc(id).delete().catch(e => console.error(e));
+  renderHistory();
+  alert('Transaksi berhasil dihapus.');
+};
+
+window.editTx=id=>{
+  const t = transactions.find(item => item.id === id);
+  if(!t) return;
+  editingTxId = t.id;
+  document.getElementById('date').value = t.date;
+  document.getElementById('examTime').value = t.time || '';
+  document.getElementById('report').value = t.report;
+  document.getElementById('installation').value = t.installation;
+  document.getElementById('patient').value = t.patient;
+
+  document.getElementById('examRows').innerHTML = '';
+  t.exams.forEach(e => {
+    addExamRow(e.name, e.qty, e.price);
+  });
+
+  document.getElementById('save').textContent = 'Simpan Perubahan';
+  showTab('input');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+};
+
+document.getElementById('selectAllMaster').addEventListener('change', e=>{
+  const checked = e.target.checked;
+  document.querySelectorAll('.row-checkbox').forEach(cb=>cb.checked=checked);
+});
+
+document.getElementById('selectAllBtn').addEventListener('click', ()=>{
+  const checkboxes = document.querySelectorAll('.row-checkbox');
+  const allChecked = [...checkboxes].every(cb => cb.checked);
+  checkboxes.forEach(cb => cb.checked = !allChecked);
+  document.getElementById('selectAllMaster').checked = !allChecked;
+});
+
+// --- FUNGSI EXPORT EXCEL DENGAN MERGE & PASIEN SAMA DIPERDEKATAN ---
+function generateImageFormatExcel(txList, filename) {
+  if (typeof XLSX === 'undefined') {
+    alert('Library Excel sedang dimuat, harap tunggu sebentar.');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const wsData = [];
+  const merges = [];
+
+  // Urutkan data berdasarkan No. RM / Nama Pasien agar data pasien yang sama tampil berdekatan
+  const sortedTxList = [...txList].sort((a, b) => {
+    const pInfoA = parsePatientInfo(a.patient);
+    const pInfoB = parsePatientInfo(b.patient);
+    
+    const keyA = (a.patientRm || pInfoA.patientRm) + " " + (a.patientName || pInfoA.patientName);
+    const keyB = (b.patientRm || pInfoB.patientRm) + " " + (b.patientName || pInfoB.patientName);
+    
+    // Kelompokkan Nama/RM yang sama berdekatan, lalu urutkan kronologis tanggal/jam
+    const nameCompare = keyA.localeCompare(keyB);
+    if (nameCompare !== 0) return nameCompare;
+
+    const timeA = (a.date || "") + " " + (a.time || "00:00");
+    const timeB = (b.date || "") + " " + (b.time || "00:00");
+    return timeA.localeCompare(timeB);
+  });
+
+  // Header Tabel Excel
+  wsData.push([
+    "Tanggal", "Jam", "Jenis Lapor", "Instalasi", "No. RM", "Nama Pasien", "Pemeriksaan", 
+    "Jumlah", "Harga Pemeriksaan", "Total Biaya Pemeriksaan", "Harga BHP", 
+    "Total Biaya BHP", "Harga HPP", "Total HPP", "Total Transaksi"
+  ]);
+
+  let currentRow = 1; // Baris 0 adalah Header
+
+  sortedTxList.forEach(t => {
+    let formattedDate = t.date;
+    if(t.date && t.date.includes('-')) {
+      const parts = t.date.split('-');
+      if(parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    const timeVal = t.time || '';
+    const reportVal = t.report || '';
+    const installationVal = t.installation || '';
+    const totalTransaksiVal = t.total || 0;
+
+    const numExams = (t.exams && t.exams.length > 0) ? t.exams.length : 1;
+    const startRow = currentRow;
+    const endRow = startRow + numExams - 1;
+
+    // Ambil No. RM dan Nama Pasien
+    const pInfo = parsePatientInfo(t.patient);
+    const rmVal = t.patientRm || pInfo.patientRm;
+    const nameVal = t.patientName || pInfo.patientName;
+
+    // Jika transaksi memiliki > 1 pemeriksaan, buat Merge Vertikal untuk data utama
+    if (numExams > 1) {
+      merges.push({ s: { r: startRow, c: 0 }, e: { r: endRow, c: 0 } }); // Tanggal
+      merges.push({ s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } }); // Jam
+      merges.push({ s: { r: startRow, c: 2 }, e: { r: endRow, c: 2 } }); // Jenis Lapor
+      merges.push({ s: { r: startRow, c: 3 }, e: { r: endRow, c: 3 } }); // Instalasi
+      merges.push({ s: { r: startRow, c: 4 }, e: { r: endRow, c: 4 } }); // No. RM
+      merges.push({ s: { r: startRow, c: 5 }, e: { r: endRow, c: 5 } }); // Nama Pasien
+      merges.push({ s: { r: startRow, c: 14 }, e: { r: endRow, c: 14 } }); // Total Transaksi
+    }
+
+    t.exams.forEach((e, idx) => {
+      const hargaPemeriksaan = e.price || 0;
+      const totalBiayaPemeriksaan = (e.qty || 1) * hargaPemeriksaan;
+      const hargaBhp = e.bhp || 0;
+      const totalBiayaBhp = (e.qty || 1) * hargaBhp;
+      const hargaHpp = e.hpp || 0;
+      const totalHpp = (e.qty || 1) * hargaHpp;
+
+      const isFirst = (idx === 0);
+      wsData.push([
+        isFirst ? formattedDate : "",
+        isFirst ? timeVal : "",
+        isFirst ? reportVal : "",
+        isFirst ? installationVal : "",
+        isFirst ? rmVal : "",
+        isFirst ? nameVal : "",
+        e.name || '',
+        e.qty || 1,
+        hargaPemeriksaan,
+        totalBiayaPemeriksaan,
+        hargaBhp,
+        totalBiayaBhp,
+        hargaHpp,
+        totalHpp,
+        isFirst ? totalTransaksiVal : ""
+      ]);
+      currentRow++;
+    });
+  });
+
+  const lastDataRow = currentRow - 1;
+  const footerRowIdx = currentRow;
+
+  // Rumus Excel SUM pada Footer
+  const sumStart = 2;
+  const sumEnd = lastDataRow + 1;
+
+  wsData.push([
+    "TOTAL KESELURUHAN", "", "", "", "", "", "",
+    `=SUM(H${sumStart}:H${sumEnd})`,
+    "",
+    `=SUM(J${sumStart}:J${sumEnd})`,
+    "",
+    `=SUM(L${sumStart}:L${sumEnd})`,
+    "",
+    `=SUM(N${sumStart}:N${sumEnd})`,
+    `=SUM(O${sumStart}:O${sumEnd})`
+  ]);
+
+  // Merge footer dari Kolom A sampai G
+  merges.push({ s: { r: footerRowIdx, c: 0 }, e: { r: footerRowIdx, c: 6 } });
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!merges'] = merges;
+
+  // Lebar Kolom
+  ws['!cols'] = [
+    { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 24 }, 
+    { wch: 28 }, { wch: 6 }, { wch: 16 }, { wch: 20 }, { wch: 12 }, 
+    { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 16 }
+  ];
+
+  // Styling Warna & Format Sel
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
+      if (!ws[cell_ref]) ws[cell_ref] = { t: "s", v: "" };
+
+      if (R === 0) {
+        ws[cell_ref].s = {
+          fill: { fgColor: { rgb: "176B45" } },
+          font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
+          alignment: { vertical: "center", horizontal: "center", wrapText: true },
+          border: { 
+            top: { style: "thin", color: { rgb: "000000" } }, 
+            bottom: { style: "thin", color: { rgb: "000000" } }, 
+            left: { style: "thin", color: { rgb: "000000" } }, 
+            right: { style: "thin", color: { rgb: "000000" } } 
+          }
+        };
+      } else if (R === footerRowIdx) {
+        ws[cell_ref].s = {
+          fill: { fgColor: { rgb: "FFF2CC" } },
+          font: { name: "Calibri", sz: 11, bold: true },
+          alignment: { vertical: "center", horizontal: C === 0 ? "center" : (C >= 6 ? "right" : "left") },
+          border: { 
+            top: { style: "thin", color: { rgb: "000000" } }, 
+            bottom: { style: "double", color: { rgb: "000000" } }, 
+            left: { style: "thin", color: { rgb: "D3D3D3" } }, 
+            right: { style: "thin", color: { rgb: "D3D3D3" } } 
+          }
+        };
+        if (C >= 6 && (typeof ws[cell_ref].v === 'number' || String(ws[cell_ref].v).startsWith('='))) {
+          ws[cell_ref].z = '#,##0';
+        }
+      } else {
+        let alignHoriz = "left";
+        if (C === 0 || C === 1 || C === 2 || C === 3 || C === 4 || C === 7) {
+          alignHoriz = "center";
+        } else if (C >= 8) {
+          alignHoriz = "right";
+          if (typeof ws[cell_ref].v === 'number') {
+            ws[cell_ref].z = '#,##0';
+          }
+        }
+
+        ws[cell_ref].s = {
+          font: { name: "Calibri", sz: 11 },
+          alignment: { vertical: "center", horizontal: alignHoriz },
+          border: { 
+            top: { style: "thin", color: { rgb: "D3D3D3" } }, 
+            bottom: { style: "thin", color: { rgb: "D3D3D3" } }, 
+            left: { style: "thin", color: { rgb: "D3D3D3" } }, 
+            right: { style: "thin", color: { rgb: "D3D3D3" } } 
+          }
+        };
+      }
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "Laporan Transaksi");
+  XLSX.writeFile(wb, filename);
+}
+
+window.exportSingleTx = id => {
+  const t = transactions.find(item => item.id === id);
+  if (!t) return alert('Data transaksi tidak ditemukan!');
+  generateImageFormatExcel([t], `${t.patient}_(${t.date}).xlsx`);
+};
+
+document.getElementById('exportSelectedBtn').addEventListener('click', () => {
+  const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.value);
+  if (selectedIds.length === 0) {
+    alert('Pilih minimal satu transaksi terlebih dahulu pada centang di tabel riwayat.');
+    return;
+  }
+  const selectedTxs = transactions.filter(t => selectedIds.includes(t.id));
+  generateImageFormatExcel(selectedTxs, `Rekap_Gabungan_Pasien_${localDate(now)}.xlsx`);
+});
+
+document.getElementById('exportMonthlyBtn').addEventListener('click', () => {
+  const m = document.getElementById('exportMonth').value;
+  const y = document.getElementById('exportYear').value;
+  const prefix = `${y}-${m}`;
+
+  const monthlyTxs = transactions.filter(t => t.date && t.date.startsWith(prefix));
+
+  if (monthlyTxs.length === 0) {
+    alert(`Tidak ada transaksi pada bulan ${m} tahun ${y}.`);
+    return;
+  }
+
+  generateImageFormatExcel(monthlyTxs, `Laporan_Transaksi_Bulanan_${m}_${y}.xlsx`);
+});
+
+document.getElementById('exportYearlyBtn').addEventListener('click', () => {
+  const y = document.getElementById('exportYear').value;
+
+  const yearlyTxs = transactions.filter(t => t.date && t.date.startsWith(`${y}-`));
+
+  if (yearlyTxs.length === 0) {
+    alert(`Tidak ada transaksi pada tahun ${y}.`);
+    return;
+  }
+
+  generateImageFormatExcel(yearlyTxs, `Laporan_Transaksi_Tahunan_${y}.xlsx`);
+});
+
+document.getElementById('exportSelectedPdfBtn').addEventListener('click', () => {
+  const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.value);
+  if (selectedIds.length === 0) {
+    alert('Pilih minimal satu transaksi terlebih dahulu pada centang di tabel riwayat.');
+    return;
+  }
+
+  const selectedTxs = transactions
+    .filter(t => selectedIds.includes(t.id))
+    .sort((a, b) => {
+      const timeA = (a.date || "") + " " + (a.time || "00:00");
+      const timeB = (b.date || "") + " " + (b.time || "00:00");
+      return timeA.localeCompare(timeB);
+    });
+
+  let grandTotalPdf = 0;
+  let tableBodyRows = '';
+
+  selectedTxs.forEach(t => {
+    t.exams.forEach((e, index) => {
+      const patientLabel = index === 0 ? `<b>${t.patient}</b><br><small>${t.installation} (${t.report}) - ${t.date} ${t.time || ''}</small>` : '';
+      const subtotal = e.qty * e.price;
+      grandTotalPdf += subtotal;
+      tableBodyRows += `
+        <tr>
+          <td>${patientLabel}</td>
+          <td>${e.name} ×${e.qty}</td>
+          <td class="num">${money(subtotal)}</td>
+        </tr>
+      `;
+    });
+  });
+
+  const printWin = window.open('', '_blank');
+  printWin.document.write(`
+    <html>
+      <head>
+        <title>Cetak Rekap PDF Terpilih</title>
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 13px; padding: 20px; }
+          .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+          .header h2 { margin: 0; font-size: 18px; }
+          .header p { margin: 2px 0; font-size: 12px; }
+          .title { text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 15px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+          th { background: #70AD47; color: #fff; }
+          .num { text-align: right; }
+          .total-row { font-weight: bold; background: #FFFF00; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>RUMAH SAKIT IBU DAN ANAK JIMMY MEDIKA BORNEO</h2>
+          <p>Jl. Pangeran Hidayatullah No. 11, Samarinda</p>
+        </div>
+        <div class="title">REKAP PRICE PASIEN LABORATORIUM TERPILIH</div>
+        <table>
+          <thead>
+            <tr>
+              <th>NAMA PASIEN / INFO</th>
+              <th>PEMERIKSAAN</th>
+              <th class="num">BIAYA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableBodyRows}
+            <tr class="total-row">
+              <td colspan="2">TOTAL KESELURUHAN</td>
+              <td class="num">${money(grandTotalPdf)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `);
+  printWin.document.close();
+  printWin.focus();
+  printWin.print();
+});
+
+window.printSingleTx = id => {
+  const t = transactions.find(item => item.id === id);
+  if (!t) return alert('Data transaksi tidak ditemukan!');
+
+  const printWin = window.open('', '_blank');
+  printWin.document.write(`
+    <html>
+      <head>
+        <title>Cetak Price Pasien - ${t.patient}</title>
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 14px; padding: 20px; }
+          .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+          .header h2 { margin: 0; font-size: 18px; }
+          .header p { margin: 2px 0; font-size: 12px; }
+          .title { text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 15px; }
+          .info { margin-bottom: 15px; font-size: 13px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+          th { background: #f0f0f0; }
+          .num { text-align: right; }
+          .total-row { font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>RUMAH SAKIT IBU DAN ANAK JIMMY MEDIKA BORNEO</h2>
+          <p>Jl. Pangeran Hidayatullah No. 11, Samarinda</p>
+        </div>
+        <div class="title">Price Pasien Laboratorium</div>
+        <div class="info">
+          <b>Nama Pasien / No. RM:</b> ${t.patient}<br>
+          <b>Tanggal / Jam:</b> ${t.date} ${t.time || ''}<br>
+          <b>Instalasi / Laporan:</b> ${t.installation} (${t.report})
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Pemeriksaan</th>
+              <th class="num">Jumlah (Qty)</th>
+              <th class="num">Biaya</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t.exams.map(e => `<tr><td>${e.name}</td><td class="num">${e.qty}</td><td class="num">${money(e.qty * e.price)}</td></tr>`).join('')}
+            <tr class="total-row">
+              <td colspan="2">TOTAL KESELURUHAN</td>
+              <td class="num">${money(t.total)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `);
+  printWin.document.close();
+  printWin.focus();
+  printWin.print();
+};
+
+// FITUR KONFIRMASI KETIK "KONFIRMASI" UNTUK HAPUS TRANSAKSI TERPILIH
+document.getElementById('deleteSelectedBtn').addEventListener('click', () => {
+  const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.value);
+  if(selectedIds.length === 0) {
+    alert('Pilih minimal satu transaksi yang ingin dihapus.');
+    return;
+  }
+  const confirmation = prompt(`⚠️ PERINGATAN:\nAnda akan menghapus ${selectedIds.length} transaksi terpilih.\n\nKetik kata KONFIRMASI untuk melanjutkan:`);
+  if(confirmation !== "KONFIRMASI") {
+    if(confirmation !== null) alert('Kata konfirmasi salah! Penghapusan dibatalkan.');
+    return;
+  }
+  transactions = transactions.filter(t => !selectedIds.includes(t.id));
+  persistLocal();
+  selectedIds.forEach(id => {
+    db.collection("transactions").doc(id).delete().catch(e => console.error(e));
+  });
+  renderHistory();
+  alert('Transaksi terpilih berhasil dihapus.');
+});
+
+document.getElementById('filterBtn').addEventListener('click', ()=>{ currentHistoryPage=0; renderHistory(); });
+document.getElementById('clearFilter').addEventListener('click', () => {
+  currentHistoryPage=0;
+  document.getElementById('fromDate').value = '';
+  document.getElementById('toDate').value = '';
+  document.getElementById('filterReport').value = '';
+  document.getElementById('searchPatient').value = '';
+  renderHistory();
+});
+
+function renderTariffs(){
+  const tbody = document.getElementById('tariffBody');
+  tbody.innerHTML = tariffs.map((t, index) => `
+    <tr>
+      <td><b>${escapeHtml(t.name)}</b></td>
+      <td class="num">${money(t.priceBhp)}</td>
+      <td class="num">${money(t.priceHpp)}</td>
+      <td class="num">${money(t.priceUmum)}</td>
+      <td class="num">${money(t.priceVip)}</td>
+      <td>
+        <button class="btn secondary" style="padding:5px 8px; font-size:11px;" type="button" onclick="editTariff(${index})">Edit</button>
+        <button class="btn danger" style="padding:5px 8px; font-size:11px;" type="button" onclick="deleteTariff(${index})">Hapus</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('addTariff').addEventListener('click', () => {
+  const name = document.getElementById('newTariffName').value.trim().toUpperCase();
+  const bhp = Number(document.getElementById('newTariffBhp').value) || 0;
+  const hpp = Number(document.getElementById('newTariffHpp').value) || 0;
+  const umum = Number(document.getElementById('newTariffPrice').value) || 0;
+  const vip = Number(document.getElementById('newTariffVip').value) || 0;
+
+  if(!name) { alert('Nama pemeriksaan wajib diisi.'); return; }
+
+  const tariffObj = { name, priceBhp: bhp, priceHpp: hpp, priceUmum: umum, priceVip: vip };
+
+  if(editingTariffName !== null) {
+    const idx = tariffs.findIndex(t => t.name === editingTariffName);
+    if(idx !== -1) {
+      tariffs[idx] = tariffObj;
+    }
+    editingTariffName = null;
+    document.getElementById('tariffFormTitle').textContent = 'Tambah Tarif Pemeriksaan Baru';
+    document.getElementById('addTariff').textContent = 'Tambah Tarif';
+    document.getElementById('cancelEditTariff').classList.add('hidden');
+  } else {
+    if(tariffs.some(t => t.name === name)) {
+      alert('Nama pemeriksaan sudah ada di daftar tarif.');
+      return;
+    }
+    tariffs.push(tariffObj);
+  }
+
+  persistLocal();
+  db.collection("tariffs").doc(tariffObj.name).set(tariffObj).catch(e => console.error(e));
+
+  document.getElementById('newTariffName').value = '';
+  document.getElementById('newTariffBhp').value = '';
+  document.getElementById('newTariffHpp').value = '';
+  document.getElementById('newTariffPrice').value = '';
+  document.getElementById('newTariffVip').value = '';
+  renderTariffs();
+  alert('Tarif berhasil disimpan!');
+});
+
+window.editTariff = index => {
+  const t = tariffs[index];
+  editingTariffName = t.name;
+  document.getElementById('newTariffName').value = t.name;
+  document.getElementById('newTariffBhp').value = t.priceBhp;
+  document.getElementById('newTariffHpp').value = t.priceHpp;
+  document.getElementById('newTariffPrice').value = t.priceUmum;
+  document.getElementById('newTariffVip').value = t.priceVip;
+  document.getElementById('tariffFormTitle').textContent = `Edit Tarif: ${t.name}`;
+  document.getElementById('addTariff').textContent = 'Simpan Perubahan';
+  document.getElementById('cancelEditTariff').classList.remove('hidden');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+};
+
+document.getElementById('cancelEditTariff').addEventListener('click', () => {
+  editingTariffName = null;
+  document.getElementById('newTariffName').value = '';
+  document.getElementById('newTariffBhp').value = '';
+  document.getElementById('newTariffHpp').value = '';
+  document.getElementById('newTariffPrice').value = '';
+  document.getElementById('newTariffVip').value = '';
+  document.getElementById('tariffFormTitle').textContent = 'Tambah Tarif Pemeriksaan Baru';
+  document.getElementById('addTariff').textContent = 'Tambah Tarif';
+  document.getElementById('cancelEditTariff').classList.add('hidden');
+});
+
+// FITUR KONFIRMASI KETIK "KONFIRMASI" UNTUK HAPUS DAFTAR TARIF
+window.deleteTariff = index => {
+  const targetName = tariffs[index].name;
+  const confirmation = prompt(`⚠️ PERINGATAN:\nAnda akan menghapus tarif pemeriksaan "${targetName}".\n\nKetik kata KONFIRMASI untuk melanjutkan:`);
+  if(confirmation !== "KONFIRMASI") {
+    if(confirmation !== null) alert('Kata konfirmasi salah! Penghapusan dibatalkan.');
+    return;
+  }
+  tariffs.splice(index, 1);
+  persistLocal();
+  db.collection("tariffs").doc(targetName).delete().catch(e => console.error(e));
+  renderTariffs();
+  alert('Tarif berhasil dihapus.');
+};
+
+function renderSummary(){
+  const summaryBody = document.getElementById('summaryBody');
+  const reports = ['UMUM', 'BPJS', 'UMUM PA', 'BPJS PA', 'VIP', 'VVIP'];
+  
+  summaryBody.innerHTML = reports.map(rep => {
+    const matched = transactions.filter(t => t.report === rep);
+    const total = matched.reduce((s, t) => s + t.total, 0);
+    return `<tr><td><b>${rep}</b></td><td class="num">${matched.length}</td><td class="num">${money(total)}</td></tr>`;
+  }).join('');
+
+  const examCounts = {};
+  transactions.forEach(t => {
+    t.exams.forEach(e => {
+      examCounts[e.name] = (examCounts[e.name] || 0) + e.qty;
+    });
+  });
+
+  const examSummaryBody = document.getElementById('examSummaryBody');
+  const sortedExams = Object.entries(examCounts).sort((a,b) => b[1] - a[1]);
+  
+  examSummaryBody.innerHTML = sortedExams.map(([name, qty]) => `
+    <tr><td>${escapeHtml(name)}</td><td class="num"><b>${qty}</b></td></tr>
+  `).join('') || '<tr><td colspan="2">Belum ada data pemeriksaan terlaksana.</td></tr>';
+}
+
+document.getElementById('exportSummaryCSV').addEventListener('click', () => {
+  if (typeof XLSX === 'undefined') return alert('Library Excel belum siap.');
+  const wb = XLSX.utils.book_new();
+  const reports = ['UMUM', 'BPJS', 'UMUM PA', 'BPJS PA', 'VIP', 'VVIP'];
+  const data = [["Jenis Laporan", "Jumlah Transaksi", "Total Pemasukan"]];
+  reports.forEach(rep => {
+    const matched = transactions.filter(t => t.report === rep);
+    const total = matched.reduce((s, t) => s + t.total, 0);
+    data.push([rep, matched.length, total]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, "Rekapitulasi");
+  XLSX.writeFile(wb, `Rekapitulasi_Lab_${localDate(now)}.xlsx`);
+});
+
+document.getElementById('downloadBackup').addEventListener('click', () => {
+  const data = { tariffs, transactions };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backup_lab_${localDate(now)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('restoreFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async event => {
+    try {
+      const data = JSON.parse(event.target.result);
+      if(data.tariffs && data.transactions) {
+        tariffs = data.tariffs;
+        transactions = data.transactions;
+        persistLocal();
+        for (const t of transactions) {
+          await db.collection("transactions").doc(t.id).set(t);
+        }
+        for (const tf of tariffs) {
+          await db.collection("tariffs").doc(tf.name).set(tf);
+        }
+        alert('Data berhasil dipulihkan dan disinkronkan ke Firebase!');
+        location.reload();
+      } else {
+        alert('Format file cadangan tidak valid.');
+      }
+    } catch(err) {
+      alert('Gagal membaca file JSON.');
+    }
+  };
+  reader.readAsText(file);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  listenFirebaseData();
+});
+</script>
+
+<!-- Script Fitur Paket Pemeriksaan Mobile Friendly -->
+<script>
+(function () {
+  function cekPengingatBackup() {
+    const kuncibackup = "lab_last_backup_checked_month";
+    const bulanSekarang = new Date().toISOString().slice(0, 7);
+    const lastChecked = localStorage.getItem(kuncibackup);
+
+    if (lastChecked !== bulanSekarang) {
+      setTimeout(() => {
+        const konfirmasi = confirm("📅 Pengingat Bulanan:\n\nBulan baru telah dimulai. Apakah Anda ingin mengunduh file cadangan (Backup JSON) untuk mengamankan data bulan lalu sekarang?");
+        if (konfirmasi) {
+          document.getElementById('downloadBackup').click();
+        }
+        localStorage.setItem(kuncibackup, bulanSekarang);
+      }, 1000);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", cekPengingatBackup);
+  } else {
+    cekPengingatBackup();
+  }
+
+  const KUNCI = "lab_paket_pemeriksaan_KETIK_v50";
+  const KUNCI_STATUS_LIPAT = "lab_paket_status_lipat_v1";
+
+  const defaultPaket = {
+    "A": { nama: "PAKET A", pemeriksaan: [] },
+    "B": { nama: "PAKET B", pemeriksaan: [] },
+    "C": { nama: "PAKET C", pemeriksaan: [] }
+  };
+
+  function bacaPaket() {
+    try {
+      const data = JSON.parse(localStorage.getItem(KUNCI));
+      if (!data || Object.keys(data).length === 0) return JSON.parse(JSON.stringify(defaultPaket));
+      return data;
+    } catch (e) {
+      return JSON.parse(JSON.stringify(defaultPaket));
+    }
+  }
+
+  let paket = bacaPaket();
+  let paketAktif = Object.keys(paket)[0] || "A";
+  let isLipat = localStorage.getItem(KUNCI_STATUS_LIPAT) === "true";
+
+  function simpanPaket() {
+    localStorage.setItem(KUNCI, JSON.stringify(paket));
+  }
+
+  function aman(teks) {
+    return String(teks ?? "").replace(/[&<>"']/g, function (huruf) {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[huruf];
+    });
+  }
+
+  function daftarTarif() {
+    if (typeof tariffs !== "undefined") return tariffs;
+    return [];
+  }
+
+  function buatTampilanPaket() {
+    const areaPemeriksaan = document.getElementById("examRows");
+    if (!areaPemeriksaan) return;
+
+    let kotak = document.getElementById("fiturPaketABC");
+
+    if (!kotak) {
+      kotak = document.createElement("div");
+      kotak.id = "fiturPaketABC";
+      kotak.className = "paket-box";
+      areaPemeriksaan.parentNode.insertBefore(kotak, areaPemeriksaan);
+    }
+
+    if (!paket[paketAktif]) {
+      paketAktif = Object.keys(paket)[0];
+    }
+
+    const data = paket[paketAktif] || { nama: "", pemeriksaan: [] };
+    const daftarKode = Object.keys(paket);
+
+    kotak.innerHTML = `
+      <div class="paket-judul" id="headerJudulPaket" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;" title="Klik 2 kali untuk membuka/menutup panel paket">
+        <span>📦 PAKET PEMERIKSAAN <small style="font-weight:normal; font-size:10px; color:#555;">(Klik 2x di sini untuk ${isLipat ? 'Buka' : 'Tutup'})</small></span>
+        <span>${isLipat ? '➕ [Buka]' : '➖ [Tutup]'}</span>
+      </div>
+
+      <div id="isiKontenPaket" style="${isLipat ? 'display:none;' : ''}">
+        <div class="paket-tombol">
+          ${daftarKode.map(kode => `
+            <button type="button"
+              data-pilih-paket="${kode}"
+              class="${kode === paketAktif ? "aktif" : ""}">
+              ${aman(paket[kode].nama || kode)}
+            </button>
+          `).join("")}
+          <button type="button" class="tambah-paket-btn" id="tambahPaketBaruBtn">
+            ＋ Paket Baru
+          </button>
+        </div>
+
+        ${daftarKode.length > 0 ? `
+          <div>
+            <label for="namaPaketInput"><b>Nama Paket</b></label>
+            <input id="namaPaketInput" type="text" maxlength="80" placeholder="Masukkan nama paket" value="${aman(data.nama)}">
+          </div>
+
+          <label><b>Isi Pemeriksaan Paket</b></label>
+          <div class="paket-pemeriksaan-list" id="paketRowContainer" style="max-height: 200px; overflow-y: auto;"></div>
+
+          <div class="paket-aksi-btn-group">
+            <button type="button" class="btn secondary" id="tambahItemPaketBtn">
+              ＋ Tambah Baris
+            </button>
+            <button type="button" id="simpanPaketABC" style="background:#176b45; color:#fff; border:none; border-radius:6px; font-weight:bold;">
+              💾 Simpan Paket
+            </button>
+            <button type="button" id="gunakanPaketABC" style="background:#f39a36; color:#fff; border:none; border-radius:6px; font-weight:bold; grid-column: span 2;">
+              ➕ Masukkan Ke Transaksi
+            </button>
+            <button type="button" class="hapus-paket-btn" id="hapusPaketABC" style="background:#b84035; color:#fff; border:none; border-radius:6px; font-weight:bold; grid-column: span 2;">
+              🗑️ Hapus Paket
+            </button>
+          </div>
+        ` : `
+          <div style="padding:10px; color:#b84035; font-size:12px;">Belum ada paket. Klik "＋ Paket Baru".</div>
+        `}
+      </div>
+    `;
+
+    const headerJudul = kotak.querySelector("#headerJudulPaket");
+    if (headerJudul) {
+      headerJudul.addEventListener("dblclick", function () {
+        isLipat = !isLipat;
+        localStorage.setItem(KUNCI_STATUS_LIPAT, isLipat);
+        buatTampilanPaket();
+      });
+    }
+
+    const container = kotak.querySelector("#paketRowContainer");
+    if (container) {
+      const datalistId = "datalist-pemeriksaan-paket-autocomplete";
+      let datalistOptions = `<datalist id="${datalistId}">`;
+      daftarTarif().forEach(t => {
+        datalistOptions += `<option value="${escapeHtml(t.name)}"></option>`;
+      });
+      datalistOptions += `</datalist>`;
+
+      if (!data.pemeriksaan || data.pemeriksaan.length === 0) {
+        data.pemeriksaan = [""];
+      }
+
+      container.innerHTML = datalistOptions + data.pemeriksaan.map((item, idx) => `
+        <div class="paket-row-ketik">
+          <input type="text" list="${datalistId}" class="input-ketik-item" data-idx="${idx}" value="${escapeHtml(item)}" placeholder="Ketik nama pemeriksaan...">
+          <button type="button" class="btn danger hapus-row-item" data-idx="${idx}" style="padding:6px 10px; font-size:11px;">Hapus</button>
+        </div>
+      `).join("");
+
+      container.querySelectorAll(".input-ketik-item").forEach(inp => {
+        inp.addEventListener("input", function () {
+          const index = parseInt(this.dataset.idx);
+          if (paket[paketAktif]) {
+            paket[paketAktif].pemeriksaan[index] = this.value;
+            simpanPaket();
+          }
+        });
+      });
+
+      container.querySelectorAll(".hapus-row-item").forEach(btn => {
+        btn.addEventListener("click", function () {
+          const index = parseInt(this.dataset.idx);
+          if (paket[paketAktif]) {
+            paket[paketAktif].pemeriksaan.splice(index, 1);
+            simpanPaket();
+            buatTampilanPaket();
+          }
+        });
+      });
+    }
+
+    const btnTambahItem = kotak.querySelector("#tambahItemPaketBtn");
+    if (btnTambahItem) {
+      btnTambahItem.addEventListener("click", function () {
+        if (paket[paketAktif]) {
+          paket[paketAktif].pemeriksaan.push("");
+          simpanPaket();
+          buatTampilanPaket();
+        }
+      });
+    }
+
+    kotak.querySelectorAll("[data-pilih-paket]").forEach(tombol => {
+      tombol.addEventListener("click", function () {
+        paketAktif = this.dataset.pilihPaket;
+        buatTampilanPaket();
+      });
+    });
+
+    const btnTambah = kotak.querySelector("#tambahPaketBaruBtn");
+    if (btnTambah) {
+      btnTambah.addEventListener("click", function () {
+        const namaInput = prompt("Masukkan Nama Paket Baru:");
+        if (namaInput && namaInput.trim() !== "") {
+          const idUnik = "P_" + Date.now().toString(36);
+          paket[idUnik] = {
+            nama: namaInput.trim().toUpperCase(),
+            pemeriksaan: [""]
+          };
+          paketAktif = idUnik;
+          simpanPaket();
+          buatTampilanPaket();
+        }
+      });
+    }
+
+    const inputNama = kotak.querySelector("#namaPaketInput");
+    if (inputNama) {
+      inputNama.addEventListener("input", function () {
+        if (paket[paketAktif]) {
+          paket[paketAktif].nama = this.value;
+          simpanPaket();
+
+          const tombolAktif = kotak.querySelector(`[data-pilih-paket="${paketAktif}"]`);
+          if (tombolAktif) {
+            tombolAktif.textContent = this.value || paketAktif;
+          }
+        }
+      });
+    }
+
+    const btnSimpan = kotak.querySelector("#simpanPaketABC");
+    if (btnSimpan) {
+      btnSimpan.addEventListener("click", function () {
+        if (!paket[paketAktif]) return;
+
+        const listClean = [...kotak.querySelectorAll(".input-ketik-item")]
+          .map(inp => inp.value.trim().toUpperCase())
+          .filter(v => v !== "");
+
+        paket[paketAktif].nama = kotak.querySelector("#namaPaketInput").value.trim() || paketAktif;
+        paket[paketAktif].pemeriksaan = listClean;
+
+        simpanPaket();
+        buatTampilanPaket();
+        alert("Paket '" + paket[paketAktif].nama + "' berhasil disimpan.");
+      });
+    }
+
+    const btnHapus = kotak.querySelector("#hapusPaketABC");
+    if (btnHapus) {
+      btnHapus.addEventListener("click", function () {
+        if (!paket[paketAktif]) return;
+        const namaPaket = paket[paketAktif].nama || paketAktif;
+        if (confirm("Apakah Anda yakin ingin menghapus " + namaPaket + "?")) {
+          delete paket[paketAktif];
+          const kunciTersedia = Object.keys(paket);
+          paketAktif = kunciTersedia.length > 0 ? kunciTersedia[0] : "";
+          simpanPaket();
+          buatTampilanPaket();
+        }
+      });
+    }
+
+    const btnGunakan = kotak.querySelector("#gunakanPaketABC");
+    if (btnGunakan) {
+      btnGunakan.addEventListener("click", function () {
+        const dataPaket = paket[paketAktif];
+        const daftarValid = (dataPaket?.pemeriksaan || []).filter(p => p.trim() !== "");
+
+        if (!dataPaket || daftarValid.length === 0) {
+          alert("Paket ini belum memiliki isi pemeriksaan.");
+          return;
+        }
+
+        if (typeof addExamRow !== "function") {
+          alert("Fungsi input pemeriksaan tidak ditemukan.");
+          return;
+        }
+
+        const baris = document.querySelectorAll("#examRows input");
+        const namaSudahAda = new Set();
+
+        baris.forEach(input => {
+          const nama = input.value?.trim().toLowerCase();
+          if (nama) namaSudahAda.add(nama);
+        });
+
+        let berhasil = 0;
+        let dilewati = 0;
+
+        daftarValid.forEach(nama => {
+          const kunciNama = nama.trim().toLowerCase();
+
+          if (namaSudahAda.has(kunciNama)) {
+            dilewati++;
+            return;
+          }
+
+          const tarifPemeriksaan = daftarTarif().find(
+            t => String(t.name).trim().toLowerCase() === kunciNama
+          );
+
+          if (!tarifPemeriksaan) {
+            dilewati++;
+            return;
+          }
+
+          addExamRow(tarifPemeriksaan.name);
+          namaSudahAda.add(kunciNama);
+          berhasil++;
+        });
+
+        if (typeof updateTotal === "function") updateTotal();
+
+        let pesan = berhasil + " pemeriksaan ditambahkan.";
+        if (dilewati) {
+          pesan += "\n" + dilewati + " dilewati (sudah ada / tidak ditemukan).";
+        }
+        alert(pesan);
+      });
+    }
+  }
+
+  function mulai() {
+    buatTampilanPaket();
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", function () {
+        setTimeout(buatTampilanPaket, 100);
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mulai);
+  } else {
+    mulai();
+  }
+})();
+</script>
+</body>
+</html>
