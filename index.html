@@ -818,7 +818,7 @@ function persistLocal(){
   localStorage.setItem('lab_transactions_v5', JSON.stringify(transactions));
 }
 
-// SINKRONISASI REAL-TIME DARI FIREBASE DENGAN MERGE DEFAULT TARIFFS
+// SINKRONISASI REAL-TIME DARI FIREBASE
 function listenFirebaseData() {
   db.collection("transactions").onSnapshot((snapshot) => {
     let cloudTx = [];
@@ -870,7 +870,6 @@ function showTab(id){
 
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 
-// Tanggal dan jam otomatis mengikuti waktu lokal perangkat.
 const dateInput = document.getElementById('date');
 const examTimeInput = document.getElementById('examTime');
 const autoDateTimeToggle = document.getElementById('autoExamDateTime');
@@ -882,23 +881,12 @@ function updateExamDateTimeFromClock() {
   examTimeInput.value = localTime(current);
 }
 
-// Isi waktu saat aplikasi dibuka, lalu perbarui selama mode otomatis aktif.
 updateExamDateTimeFromClock();
 setInterval(updateExamDateTimeFromClock, 1000);
 
-// Jika tanggal atau jam diubah manual, hentikan pembaruan otomatis
-// agar waktu pemeriksaan lampau tidak tertimpa.
-dateInput.addEventListener('change', () => {
-  autoDateTimeToggle.checked = false;
-});
-examTimeInput.addEventListener('change', () => {
-  autoDateTimeToggle.checked = false;
-});
-
-// Pengguna dapat mengaktifkan kembali mode otomatis kapan saja.
-autoDateTimeToggle.addEventListener('change', () => {
-  if (autoDateTimeToggle.checked) updateExamDateTimeFromClock();
-});
+dateInput.addEventListener('change', () => { autoDateTimeToggle.checked = false; });
+examTimeInput.addEventListener('change', () => { autoDateTimeToggle.checked = false; });
+autoDateTimeToggle.addEventListener('change', () => { if (autoDateTimeToggle.checked) updateExamDateTimeFromClock(); });
 
 const exportYearSelect = document.getElementById('exportYear');
 const currentYr = new Date().getFullYear();
@@ -976,7 +964,6 @@ function updateTotal(){
 document.getElementById('addExam').addEventListener('click',()=>addExamRow());
 addExamRow();
 
-// Function helper untuk memisahkan No. RM dan Nama
 function parsePatientInfo(rawInput) {
   let patientRm = "-";
   let patientName = rawInput || "-";
@@ -1178,7 +1165,7 @@ document.getElementById('selectAllBtn').addEventListener('click', ()=>{
   document.getElementById('selectAllMaster').checked = !allChecked;
 });
 
-// --- FUNGSI EXPORT EXCEL DENGAN MERGE & PASIEN SAMA DIPERDEKATAN ---
+// --- FUNGSI EXPORT EXCEL ---
 function generateImageFormatExcel(txList, filename) {
   if (typeof XLSX === 'undefined') {
     alert('Library Excel sedang dimuat, harap tunggu sebentar.');
@@ -1414,7 +1401,6 @@ document.getElementById('exportSelectedBtn').addEventListener('click', () => {
   generateImageFormatExcel(selectedTxs, `Rekap_Gabungan_Pasien_${localDate(now)}.xlsx`);
 });
 
-// LOGIKA EKSPOR DENGAN FILTERED (JENIS LAPORAN & RENTANG TANGGAL)
 document.getElementById('exportFilteredBtn').addEventListener('click', () => {
   const reportFilter = document.getElementById('exportFilterReport').value;
   const fromDate = document.getElementById('exportFromDate').value;
@@ -1936,7 +1922,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- Script Fitur Paket Pemeriksaan Mobile Friendly -->
+<!-- Script Fitur Paket Pemeriksaan Terintegrasi Firebase Real-Time -->
 <script>
 (function () {
   function cekPengingatBackup() {
@@ -1961,7 +1947,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cekPengingatBackup();
   }
 
-  const KUNCI = "lab_paket_pemeriksaan_KETIK_v50";
+  const KUNCI_LOCAL = "lab_paket_pemeriksaan_KETIK_v50";
   const KUNCI_STATUS_LIPAT = "lab_paket_status_lipat_v1";
 
   const defaultPaket = {
@@ -1970,22 +1956,35 @@ document.addEventListener('DOMContentLoaded', () => {
     "C": { nama: "PAKET C", pemeriksaan: [] }
   };
 
-  function bacaPaket() {
-    try {
-      const data = JSON.parse(localStorage.getItem(KUNCI));
-      if (!data || Object.keys(data).length === 0) return JSON.parse(JSON.stringify(defaultPaket));
-      return data;
-    } catch (e) {
-      return JSON.parse(JSON.stringify(defaultPaket));
-    }
-  }
-
-  let paket = bacaPaket();
+  let paket = JSON.parse(localStorage.getItem(KUNCI_LOCAL) || 'null') || JSON.parse(JSON.stringify(defaultPaket));
   let paketAktif = Object.keys(paket)[0] || "A";
   let isLipat = localStorage.getItem(KUNCI_STATUS_LIPAT) === "true";
 
-  function simpanPaket() {
-    localStorage.setItem(KUNCI, JSON.stringify(paket));
+  function simpanPaketLocal() {
+    localStorage.setItem(KUNCI_LOCAL, JSON.stringify(paket));
+  }
+
+  function listenFirebasePaket() {
+    if (typeof db === "undefined") return;
+    
+    db.collection("paket_pemeriksaan").onSnapshot((snapshot) => {
+      let cloudPaket = {};
+      snapshot.forEach((doc) => {
+        cloudPaket[doc.id] = doc.data();
+      });
+
+      if (Object.keys(cloudPaket).length > 0) {
+        paket = cloudPaket;
+        simpanPaketLocal();
+        buatTampilanPaket();
+      } else {
+        Object.keys(defaultPaket).forEach(kode => {
+          db.collection("paket_pemeriksaan").doc(kode).set(defaultPaket[kode]);
+        });
+      }
+    }, (err) => {
+      console.error("Gagal mendengarkan data paket dari Firebase:", err);
+    });
   }
 
   function aman(teks) {
@@ -2019,7 +2018,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!paket[paketAktif]) {
-      paketAktif = Object.keys(paket)[0];
+      paketAktif = Object.keys(paket)[0] || "";
     }
 
     const data = paket[paketAktif] || { nama: "", pemeriksaan: [] };
@@ -2108,7 +2107,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const index = parseInt(this.dataset.idx);
           if (paket[paketAktif]) {
             paket[paketAktif].pemeriksaan[index] = this.value;
-            simpanPaket();
+            simpanPaketLocal();
           }
         });
       });
@@ -2118,7 +2117,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const index = parseInt(this.dataset.idx);
           if (paket[paketAktif]) {
             paket[paketAktif].pemeriksaan.splice(index, 1);
-            simpanPaket();
+            simpanPaketLocal();
             buatTampilanPaket();
           }
         });
@@ -2130,7 +2129,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnTambahItem.addEventListener("click", function () {
         if (paket[paketAktif]) {
           paket[paketAktif].pemeriksaan.push("");
-          simpanPaket();
+          simpanPaketLocal();
           buatTampilanPaket();
         }
       });
@@ -2149,12 +2148,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const namaInput = prompt("Masukkan Nama Paket Baru:");
         if (namaInput && namaInput.trim() !== "") {
           const idUnik = "P_" + Date.now().toString(36);
-          paket[idUnik] = {
+          const newObj = {
             nama: namaInput.trim().toUpperCase(),
             pemeriksaan: [""]
           };
+          paket[idUnik] = newObj;
           paketAktif = idUnik;
-          simpanPaket();
+          simpanPaketLocal();
+          db.collection("paket_pemeriksaan").doc(idUnik).set(newObj).catch(e => console.error(e));
           buatTampilanPaket();
         }
       });
@@ -2165,7 +2166,7 @@ document.addEventListener('DOMContentLoaded', () => {
       inputNama.addEventListener("input", function () {
         if (paket[paketAktif]) {
           paket[paketAktif].nama = this.value;
-          simpanPaket();
+          simpanPaketLocal();
 
           const tombolAktif = kotak.querySelector(`[data-pilih-paket="${paketAktif}"]`);
           if (tombolAktif) {
@@ -2187,9 +2188,12 @@ document.addEventListener('DOMContentLoaded', () => {
         paket[paketAktif].nama = kotak.querySelector("#namaPaketInput").value.trim() || paketAktif;
         paket[paketAktif].pemeriksaan = listClean;
 
-        simpanPaket();
+        simpanPaketLocal();
+        db.collection("paket_pemeriksaan").doc(paketAktif).set(paket[paketAktif])
+          .then(() => alert("Paket '" + paket[paketAktif].nama + "' berhasil disimpan dan disinkronkan!"))
+          .catch(e => alert("Gagal menyimpan ke Firebase: " + e.message));
+
         buatTampilanPaket();
-        alert("Paket '" + paket[paketAktif].nama + "' berhasil disimpan.");
       });
     }
 
@@ -2197,12 +2201,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnHapus) {
       btnHapus.addEventListener("click", function () {
         if (!paket[paketAktif]) return;
-        const namaPaket = paket[paketAktif].nama || paketAktif;
+        const targetId = paketAktif;
+        const namaPaket = paket[targetId].nama || targetId;
+        
         if (confirm("Apakah Anda yakin ingin menghapus " + namaPaket + "?")) {
-          delete paket[paketAktif];
+          delete paket[targetId];
           const kunciTersedia = Object.keys(paket);
           paketAktif = kunciTersedia.length > 0 ? kunciTersedia[0] : "";
-          simpanPaket();
+          simpanPaketLocal();
+          
+          db.collection("paket_pemeriksaan").doc(targetId).delete().catch(e => console.error(e));
           buatTampilanPaket();
         }
       });
@@ -2270,6 +2278,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function mulai() {
     buatTampilanPaket();
+    listenFirebasePaket();
 
     document.querySelectorAll(".tab").forEach(tab => {
       tab.addEventListener("click", function () {
