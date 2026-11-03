@@ -377,6 +377,14 @@ th {
 .date-detail-inner table { margin-top: 5px; min-width: 850px; }
 .date-detail-inner th, .date-detail-inner td { font-size: 11px; padding: 7px; }
 
+/* Penataan kecil kontrol waktu agar susunan data pasien tetap seperti semula */
+.auto-time-label { display:flex; flex-direction:row; align-items:center; gap:6px; margin-top:2px; font-size:10px !important; font-weight:600 !important; color:#547064; text-transform:none !important; cursor:pointer; }
+.auto-time-label input { width:auto; margin:0; accent-color:var(--green); }
+.tariff-categories { display:flex; flex-wrap:wrap; gap:7px; margin-top:18px; padding:10px; background:#f5f9f5; border:1px solid var(--line); border-radius:9px; }
+.tariff-category-btn { border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:7px; padding:8px 11px; font-size:11px; font-weight:700; cursor:pointer; }
+.tariff-category-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
+.tariff-category-btn span { opacity:.8; font-weight:600; margin-left:3px; }
+.tariff-page-info { font-size:11px; color:#66766d; margin:7px 2px 0; font-weight:600; }
 </style>
 </head>
 <body>
@@ -427,7 +435,9 @@ th {
       <h2>Data Pasien</h2>
       <div class="grid">
         <div class="field"><label>TANGGAL</label><input type="date" id="date"></div>
-        <div class="field"><label>JAM PEMERIKSAAN</label><input type="time" id="examTime"></div>
+        <div class="field"><label>JAM PEMERIKSAAN</label><input type="time" id="examTime">
+          <label for="autoExamDateTime" class="auto-time-label"><input type="checkbox" id="autoExamDateTime" checked> Otomatis mengikuti jam sekarang</label>
+        </div>
         <div class="field"><label>JENIS LAPORAN / TARIF</label><select id="report"><option>UMUM</option><option>BPJS</option><option>UMUM PA</option><option>BPJS PA</option><option>VIP</option><option>VVIP</option></select></div>
         <div class="field"><label>INSTALASI</label><select id="installation"><option>RAJAL</option><option>RANAP</option><option>IGD</option><option>LAINNYA</option></select></div>
         <div class="field" style="grid-column: 1 / -1;"><label>NAMA PASIEN / NO. RM</label><input id="patient" placeholder="Masukkan nama pasien atau No. RM..."></div>
@@ -522,7 +532,9 @@ th {
         <button class="btn" id="addTariff" type="button" style="flex:1;">Tambah Tarif</button>
         <button class="btn secondary hidden" id="cancelEditTariff" type="button">Batal Edit</button>
       </div>
-      <div class="table-wrap" style="margin-top:16px">
+      <div id="tariffCategories" class="tariff-categories" aria-label="Kelompok tarif"></div>
+      <div id="tariffPageInfo" class="tariff-page-info"></div>
+      <div class="table-wrap" style="margin-top:10px">
         <table>
           <thead><tr><th>Pemeriksaan</th><th class="num">BHP</th><th class="num">HPP</th><th class="num">UMUM</th><th class="num">VIP / VVIP</th><th>Aksi</th></tr></thead>
           <tbody id="tariffBody"></tbody>
@@ -543,10 +555,30 @@ th {
 
       <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
 
-      <h2>Ekspor Periode (Bulanan / Tahunan)</h2>
+      <h2>Ekspor Periode & Filtered (Excel / PDF)</h2>
       <div class="grid" style="align-items:end;">
         <div class="field">
-          <label>PILIH BULAN</label>
+          <label>JENIS LAPORAN</label>
+          <select id="exportFilterReport">
+            <option value="">Semua Jenis Laporan</option>
+            <option>UMUM</option>
+            <option>BPJS</option>
+            <option>UMUM PA</option>
+            <option>BPJS PA</option>
+            <option>VIP</option>
+            <option>VVIP</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>DARI TANGGAL</label>
+          <input type="date" id="exportFromDate">
+        </div>
+        <div class="field">
+          <label>SAMPAI TANGGAL</label>
+          <input type="date" id="exportToDate">
+        </div>
+        <div class="field">
+          <label>PILIH BULAN (Cepat)</label>
           <select id="exportMonth">
             <option value="01">Januari</option>
             <option value="02">Februari</option>
@@ -566,10 +598,13 @@ th {
           <label>PILIH TAHUN</label>
           <select id="exportYear"></select>
         </div>
-        <div class="actions" style="grid-column: span 1; margin:0; display:flex; gap:8px; flex-direction:column;">
-          <button class="btn" id="exportMonthlyBtn" type="button" style="width:100%;">📊 Ekspor Transaksi Bulanan</button>
-          <button class="btn orange" id="exportYearlyBtn" type="button" style="width:100%;">📅 Ekspor Transaksi Tahunan</button>
-        </div>
+      </div>
+      
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px; margin-top:12px;">
+        <button class="btn yellow" id="exportFilteredBtn" type="button">📊 Ekspor Excel (Sesuai Filter)</button>
+        <button class="btn pdf" id="exportFilteredPdfBtn" type="button">📄 Ekspor PDF (Sesuai Filter)</button>
+        <button class="btn" id="exportMonthlyBtn" type="button">📊 Ekspor Excel Bulanan</button>
+        <button class="btn orange" id="exportYearlyBtn" type="button">📅 Ekspor Excel Tahunan</button>
       </div>
 
       <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
@@ -835,8 +870,35 @@ function showTab(id){
 
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 
-document.getElementById('date').value=localDate(now);
-document.getElementById('examTime').value=localTime(now);
+// Tanggal dan jam otomatis mengikuti waktu lokal perangkat.
+const dateInput = document.getElementById('date');
+const examTimeInput = document.getElementById('examTime');
+const autoDateTimeToggle = document.getElementById('autoExamDateTime');
+
+function updateExamDateTimeFromClock() {
+  if (!autoDateTimeToggle.checked) return;
+  const current = new Date();
+  dateInput.value = localDate(current);
+  examTimeInput.value = localTime(current);
+}
+
+// Isi waktu saat aplikasi dibuka, lalu perbarui selama mode otomatis aktif.
+updateExamDateTimeFromClock();
+setInterval(updateExamDateTimeFromClock, 1000);
+
+// Jika tanggal atau jam diubah manual, hentikan pembaruan otomatis
+// agar waktu pemeriksaan lampau tidak tertimpa.
+dateInput.addEventListener('change', () => {
+  autoDateTimeToggle.checked = false;
+});
+examTimeInput.addEventListener('change', () => {
+  autoDateTimeToggle.checked = false;
+});
+
+// Pengguna dapat mengaktifkan kembali mode otomatis kapan saja.
+autoDateTimeToggle.addEventListener('change', () => {
+  if (autoDateTimeToggle.checked) updateExamDateTimeFromClock();
+});
 
 const exportYearSelect = document.getElementById('exportYear');
 const currentYr = new Date().getFullYear();
@@ -914,7 +976,6 @@ function updateTotal(){
 document.getElementById('addExam').addEventListener('click',()=>addExamRow());
 addExamRow();
 
-
 // Function helper untuk memisahkan No. RM dan Nama
 function parsePatientInfo(rawInput) {
   let patientRm = "-";
@@ -981,6 +1042,8 @@ document.getElementById('save').addEventListener('click',()=>{
   persistLocal();
   document.getElementById('patient').value='';
   document.getElementById('examRows').innerHTML='';
+  autoDateTimeToggle.checked = true;
+  updateExamDateTimeFromClock();
   addExamRow();
   renderHistory();
 });
@@ -1004,7 +1067,6 @@ function renderHistory(){
   document.getElementById('statTotal').textContent=money(filtered.reduce((s,t)=>s+(Number(t.total)||0),0));
   document.getElementById('statExams').textContent=filtered.reduce((s,t)=>s+(t.exams||[]).reduce((n,e)=>n+(Number(e.qty)||0),0),0);
 
-  // Satu halaman hanya memuat transaksi pada satu tanggal.
   const dateKeys=[...new Set(filtered.map(t=>t.date||'Tanggal tidak diketahui'))].sort((a,b)=>b.localeCompare(a));
   const body=document.getElementById('historyBody');
   const prev=document.getElementById('historyPrev');
@@ -1089,6 +1151,7 @@ window.editTx=id=>{
   editingTxId = t.id;
   document.getElementById('date').value = t.date;
   document.getElementById('examTime').value = t.time || '';
+  document.getElementById('autoExamDateTime').checked = false;
   document.getElementById('report').value = t.report;
   document.getElementById('installation').value = t.installation;
   document.getElementById('patient').value = t.patient;
@@ -1126,31 +1189,63 @@ function generateImageFormatExcel(txList, filename) {
   const wsData = [];
   const merges = [];
 
-  // Urutkan data berdasarkan No. RM / Nama Pasien agar data pasien yang sama tampil berdekatan
-  const sortedTxList = [...txList].sort((a, b) => {
-    const pInfoA = parsePatientInfo(a.patient);
-    const pInfoB = parsePatientInfo(b.patient);
-    
-    const keyA = (a.patientRm || pInfoA.patientRm) + " " + (a.patientName || pInfoA.patientName);
-    const keyB = (b.patientRm || pInfoB.patientRm) + " " + (b.patientName || pInfoB.patientName);
-    
-    // Kelompokkan Nama/RM yang sama berdekatan, lalu urutkan kronologis tanggal/jam
-    const nameCompare = keyA.localeCompare(keyB);
-    if (nameCompare !== 0) return nameCompare;
+  const patientGroups = new Map();
 
-    const timeA = (a.date || "") + " " + (a.time || "00:00");
-    const timeB = (b.date || "") + " " + (b.time || "00:00");
-    return timeA.localeCompare(timeB);
+  [...txList].forEach((t, originalIndex) => {
+    const pInfo = parsePatientInfo(t.patient);
+    const rm = String(t.patientRm || pInfo.patientRm || '').trim().toUpperCase();
+    const name = String(t.patientName || pInfo.patientName || '').trim().toUpperCase();
+
+    const canGroup = rm && name && rm !== '-' && name !== '-';
+    const patientKey = canGroup
+      ? JSON.stringify([rm, name])
+      : `TRANSAKSI_TUNGGAL_${t.id || originalIndex}`;
+
+    if (!patientGroups.has(patientKey)) {
+      patientGroups.set(patientKey, {
+        firstIndex: originalIndex,
+        items: []
+      });
+    }
+    patientGroups.get(patientKey).items.push(t);
   });
 
-  // Header Tabel Excel
+  const getExamDateTime = t => {
+    const rawDate = String(t.date || '').trim();
+    let yyyy = '9999', mm = '12', dd = '31';
+    let m = rawDate.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) {
+      yyyy = m[1]; mm = m[2].padStart(2, '0'); dd = m[3].padStart(2, '0');
+    } else {
+      m = rawDate.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+      if (m) { dd = m[1].padStart(2, '0'); mm = m[2].padStart(2, '0'); yyyy = m[3]; }
+    }
+    const rawTime = String(t.time || '').trim();
+    const tm = rawTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    const hhmmss = tm
+      ? `${tm[1].padStart(2, '0')}:${tm[2]}:${(tm[3] || '00').padStart(2, '0')}`
+      : '99:99:99';
+    return `${yyyy}-${mm}-${dd} ${hhmmss}`;
+  };
+
+  const sortedGroups = [...patientGroups.values()].map(group => {
+    group.items.sort((a, b) => getExamDateTime(a).localeCompare(getExamDateTime(b)));
+    return group;
+  }).sort((a, b) => {
+    const firstA = getExamDateTime(a.items[0]);
+    const firstB = getExamDateTime(b.items[0]);
+    return firstA.localeCompare(firstB) || a.firstIndex - b.firstIndex;
+  });
+
+  const sortedTxList = sortedGroups.flatMap(group => group.items);
+
   wsData.push([
     "Tanggal", "Jam", "Jenis Lapor", "Instalasi", "No. RM", "Nama Pasien", "Pemeriksaan", 
     "Jumlah", "Harga Pemeriksaan", "Total Biaya Pemeriksaan", "Harga BHP", 
     "Total Biaya BHP", "Harga HPP", "Total HPP", "Total Transaksi"
   ]);
 
-  let currentRow = 1; // Baris 0 adalah Header
+  let currentRow = 1;
 
   sortedTxList.forEach(t => {
     let formattedDate = t.date;
@@ -1168,20 +1263,18 @@ function generateImageFormatExcel(txList, filename) {
     const startRow = currentRow;
     const endRow = startRow + numExams - 1;
 
-    // Ambil No. RM dan Nama Pasien
     const pInfo = parsePatientInfo(t.patient);
     const rmVal = t.patientRm || pInfo.patientRm;
     const nameVal = t.patientName || pInfo.patientName;
 
-    // Jika transaksi memiliki > 1 pemeriksaan, buat Merge Vertikal untuk data utama
     if (numExams > 1) {
-      merges.push({ s: { r: startRow, c: 0 }, e: { r: endRow, c: 0 } }); // Tanggal
-      merges.push({ s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } }); // Jam
-      merges.push({ s: { r: startRow, c: 2 }, e: { r: endRow, c: 2 } }); // Jenis Lapor
-      merges.push({ s: { r: startRow, c: 3 }, e: { r: endRow, c: 3 } }); // Instalasi
-      merges.push({ s: { r: startRow, c: 4 }, e: { r: endRow, c: 4 } }); // No. RM
-      merges.push({ s: { r: startRow, c: 5 }, e: { r: endRow, c: 5 } }); // Nama Pasien
-      merges.push({ s: { r: startRow, c: 14 }, e: { r: endRow, c: 14 } }); // Total Transaksi
+      merges.push({ s: { r: startRow, c: 0 }, e: { r: endRow, c: 0 } });
+      merges.push({ s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } });
+      merges.push({ s: { r: startRow, c: 2 }, e: { r: endRow, c: 2 } });
+      merges.push({ s: { r: startRow, c: 3 }, e: { r: endRow, c: 3 } });
+      merges.push({ s: { r: startRow, c: 4 }, e: { r: endRow, c: 4 } });
+      merges.push({ s: { r: startRow, c: 5 }, e: { r: endRow, c: 5 } });
+      merges.push({ s: { r: startRow, c: 14 }, e: { r: endRow, c: 14 } });
     }
 
     t.exams.forEach((e, idx) => {
@@ -1217,7 +1310,6 @@ function generateImageFormatExcel(txList, filename) {
   const lastDataRow = currentRow - 1;
   const footerRowIdx = currentRow;
 
-  // Rumus Excel SUM pada Footer
   const sumStart = 2;
   const sumEnd = lastDataRow + 1;
 
@@ -1233,20 +1325,17 @@ function generateImageFormatExcel(txList, filename) {
     `=SUM(O${sumStart}:O${sumEnd})`
   ]);
 
-  // Merge footer dari Kolom A sampai G
   merges.push({ s: { r: footerRowIdx, c: 0 }, e: { r: footerRowIdx, c: 6 } });
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   ws['!merges'] = merges;
 
-  // Lebar Kolom
   ws['!cols'] = [
     { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 24 }, 
     { wch: 28 }, { wch: 6 }, { wch: 16 }, { wch: 20 }, { wch: 12 }, 
     { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 16 }
   ];
 
-  // Styling Warna & Format Sel
   const range = XLSX.utils.decode_range(ws['!ref']);
   for (let R = range.s.r; R <= range.e.r; ++R) {
     for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -1323,6 +1412,122 @@ document.getElementById('exportSelectedBtn').addEventListener('click', () => {
   }
   const selectedTxs = transactions.filter(t => selectedIds.includes(t.id));
   generateImageFormatExcel(selectedTxs, `Rekap_Gabungan_Pasien_${localDate(now)}.xlsx`);
+});
+
+// LOGIKA EKSPOR DENGAN FILTERED (JENIS LAPORAN & RENTANG TANGGAL)
+document.getElementById('exportFilteredBtn').addEventListener('click', () => {
+  const reportFilter = document.getElementById('exportFilterReport').value;
+  const fromDate = document.getElementById('exportFromDate').value;
+  const toDate = document.getElementById('exportToDate').value;
+
+  let filteredTxs = transactions.filter(t => {
+    let matchReport = !reportFilter || t.report === reportFilter;
+    let matchFrom = !fromDate || (t.date && t.date >= fromDate);
+    let matchTo = !toDate || (t.date && t.date <= toDate);
+    return matchReport && matchFrom && matchTo;
+  });
+
+  if (filteredTxs.length === 0) {
+    alert('Tidak ada transaksi yang sesuai dengan kriteria filter yang dipilih.');
+    return;
+  }
+
+  let fileSuffix = reportFilter ? `_${reportFilter}` : '_SEMUA';
+  if (fromDate && toDate) fileSuffix += `_${fromDate}_s.d_${toDate}`;
+  else if (fromDate) fileSuffix += `_dari_${fromDate}`;
+  else if (toDate) fileSuffix += `_sampai_${toDate}`;
+
+  generateImageFormatExcel(filteredTxs, `Laporan_Transaksi${fileSuffix}.xlsx`);
+});
+
+document.getElementById('exportFilteredPdfBtn').addEventListener('click', () => {
+  const reportFilter = document.getElementById('exportFilterReport').value;
+  const fromDate = document.getElementById('exportFromDate').value;
+  const toDate = document.getElementById('exportToDate').value;
+
+  let selectedTxs = transactions.filter(t => {
+    let matchReport = !reportFilter || t.report === reportFilter;
+    let matchFrom = !fromDate || (t.date && t.date >= fromDate);
+    let matchTo = !toDate || (t.date && t.date <= toDate);
+    return matchReport && matchFrom && matchTo;
+  }).sort((a, b) => {
+    const timeA = (a.date || "") + " " + (a.time || "00:00");
+    const timeB = (b.date || "") + " " + (b.time || "00:00");
+    return timeA.localeCompare(timeB);
+  });
+
+  if (selectedTxs.length === 0) {
+    alert('Tidak ada transaksi yang sesuai dengan kriteria filter yang dipilih.');
+    return;
+  }
+
+  let grandTotalPdf = 0;
+  let tableBodyRows = '';
+
+  selectedTxs.forEach(t => {
+    t.exams.forEach((e, index) => {
+      const patientLabel = index === 0 ? `<b>${t.patient}</b><br><small>${t.installation} (${t.report}) - ${t.date} ${t.time || ''}</small>` : '';
+      const subtotal = e.qty * e.price;
+      grandTotalPdf += subtotal;
+      tableBodyRows += `
+        <tr>
+          <td>${patientLabel}</td>
+          <td>${e.name} ×${e.qty}</td>
+          <td class="num">${money(subtotal)}</td>
+        </tr>
+      `;
+    });
+  });
+
+  const printWin = window.open('', '_blank');
+  printWin.document.write(`
+    <html>
+      <head>
+        <title>Cetak Rekap PDF Filtered</title>
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 13px; padding: 20px; }
+          .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+          .header h2 { margin: 0; font-size: 18px; }
+          .header p { margin: 2px 0; font-size: 12px; }
+          .title { text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 15px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+          th { background: #70AD47; color: #fff; }
+          .num { text-align: right; }
+          .total-row { font-weight: bold; background: #FFFF00; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>RUMAH SAKIT IBU DAN ANAK JIMMY MEDIKA BORNEO</h2>
+          <p>Jl. Pangeran Hidayatullah No. 11, Samarinda</p>
+        </div>
+        <div class="title">REKAP PRICE PASIEN LABORATORIUM FILTERED</div>
+        <div style="font-size:11px; margin-bottom:10px;">
+          Filter: ${reportFilter || 'Semua Laporan'} | Periode: ${fromDate || 'Semua'} s.d ${toDate || 'Semua'}
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>NAMA PASIEN / INFO</th>
+              <th>PEMERIKSAAN</th>
+              <th class="num">BIAYA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableBodyRows}
+            <tr class="total-row">
+              <td colspan="2">TOTAL KESELURUHAN</td>
+              <td class="num">${money(grandTotalPdf)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `);
+  printWin.document.close();
+  printWin.focus();
+  printWin.print();
 });
 
 document.getElementById('exportMonthlyBtn').addEventListener('click', () => {
@@ -1492,7 +1697,6 @@ window.printSingleTx = id => {
   printWin.print();
 };
 
-// FITUR KONFIRMASI KETIK "KONFIRMASI" UNTUK HAPUS TRANSAKSI TERPILIH
 document.getElementById('deleteSelectedBtn').addEventListener('click', () => {
   const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.value);
   if(selectedIds.length === 0) {
@@ -1523,9 +1727,36 @@ document.getElementById('clearFilter').addEventListener('click', () => {
   renderHistory();
 });
 
+let activeTariffCategory = 'Hematologi & Koagulasi';
+
+function getTariffCategory(name){
+  const n = String(name || '').toUpperCase();
+  if (/HISTO PA|IHC|PAP SMEAR|SITOLOGI|FNAB/.test(n)) return 'Patologi Anatomi';
+  if (/AHF |FFP |PACK RED CELLS|PLASMA KONVALENSE|TROMBOSIT|ERYROSYT|WHOLE BLOOD|CROSS MATCH|UJI COCOK|LEUCODEPLETED|RHESUS NEGATIF|LIQUIT PLASMA|\bRPC\b|\bWB\b|\bTC\b/.test(n)) return 'Bank Darah';
+  if (/FESES|FOBT|URIN|URINE|ANALISA SPERMA|PP TEST/.test(n)) return 'Urin, Feses & Lainnya';
+  if (/BTA|KULTUR|MALARIA|TCM/.test(n)) return 'Mikrobiologi';
+  if (/BLEEDING TIME|CLOOTING TIME|\bPT\b|\bAPTT\b|\bINR\b|DARAH LENGKAP|DARAH RUTIN|MORFOLOGI DARAH|GOLONGAN DARAH/.test(n)) return 'Hematologi & Koagulasi';
+  if (/GLUKOSA|GDP|GDS|CHOLESTEROL|ASAM URAT|TRIGLISERIDA|SGOT|SGPT|BUN|KREATININ|HDL|BILIRUBIN|PROTEIN TOTAL|ALBUMIN|GAMMA GT|ALKALI PHOSPHAT|CK-MB|ELEKTROLIT|KALSIUM|FOSFOR|MAGNESIUM|HBA1C|GLOBULIN|FERRITIN/.test(n)) return 'Kimia Klinik';
+  if (/WIDAL|HBSAG|HIV|TPHA|SALMONELLA|NSI|NS-1|DENGUE|CRP|ASTO|\bRF\b|ANTI |TORCH|T[34]|TSH|FT4|FREE T[34]|AFP|NSE|CEA|PSA|CA 19|CA 125|CA 15|BETA HCG|HB ELEKTROFORESA|SHK/.test(n)) return 'Imunologi & Serologi';
+  return 'Lainnya';
+}
+
 function renderTariffs(){
   const tbody = document.getElementById('tariffBody');
-  tbody.innerHTML = tariffs.map((t, index) => `
+  const categoryOrder = ['Hematologi & Koagulasi','Kimia Klinik','Imunologi & Serologi','Urin, Feses & Lainnya','Mikrobiologi','Patologi Anatomi','Bank Darah','Lainnya'];
+  const counts = {};
+  tariffs.forEach(t => { const c=getTariffCategory(t.name); counts[c]=(counts[c]||0)+1; });
+  const categories = ['Semua', ...categoryOrder.filter(c => counts[c])];
+  if (!categories.includes(activeTariffCategory)) activeTariffCategory='Semua';
+  const nav=document.getElementById('tariffCategories');
+  nav.innerHTML=categories.map(c=>{
+    const count=c==='Semua'?tariffs.length:(counts[c]||0);
+    return `<button type="button" class="tariff-category-btn ${activeTariffCategory===c?'active':''}" data-category="${escapeHtml(c)}">${escapeHtml(c)} <span>(${count})</span></button>`;
+  }).join('');
+  nav.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{activeTariffCategory=btn.dataset.category;renderTariffs();}));
+  const visible=tariffs.map((t,index)=>({t,index})).filter(x=>activeTariffCategory==='Semua'||getTariffCategory(x.t.name)===activeTariffCategory);
+  document.getElementById('tariffPageInfo').textContent=`Halaman kelompok: ${activeTariffCategory} · ${visible.length} tarif`;
+  tbody.innerHTML = visible.map(({t,index}) => `
     <tr>
       <td><b>${escapeHtml(t.name)}</b></td>
       <td class="num">${money(t.priceBhp)}</td>
@@ -1606,7 +1837,6 @@ document.getElementById('cancelEditTariff').addEventListener('click', () => {
   document.getElementById('cancelEditTariff').classList.add('hidden');
 });
 
-// FITUR KONFIRMASI KETIK "KONFIRMASI" UNTUK HAPUS DAFTAR TARIF
 window.deleteTariff = index => {
   const targetName = tariffs[index].name;
   const confirmation = prompt(`⚠️ PERINGATAN:\nAnda akan menghapus tarif pemeriksaan "${targetName}".\n\nKetik kata KONFIRMASI untuk melanjutkan:`);
